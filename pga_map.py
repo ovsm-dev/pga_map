@@ -274,9 +274,10 @@ def parse_args():
     return args
 
 
-def parse_config(config_file): 
-    # Transform initial "=" sign to comment and then all "|" signs to "="
-    conf_str = open(config_file, 'r').read().replace('=', '#').replace('|', '=')
+def parse_config(config_file):
+    # Transform initial "=" sign to "#" (comment), then all "|" signs to "="
+    conf_str =\
+        open(config_file, 'r').read().replace('=', '#').replace('|', '=')
     # Prepend a [root] namespace for ConfigParser compatibility
     conf_str = '[root]\n' + conf_str
     conf_fp = StringIO(conf_str)
