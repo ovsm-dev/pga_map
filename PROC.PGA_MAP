@@ -1,6 +1,6 @@
 =key|value
 
-NAME|Mouvements forts du sol
+NAME|Strong Motion mapping
 TYPE|
 OWNCODE|I
 RAWDATA|$WEBOBS{ROOT_RAWD}/Sismologie/PgaPgv
