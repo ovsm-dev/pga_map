@@ -268,8 +268,8 @@ def parse_args():
     parser.add_argument('xml_file')
     parser.add_argument('xml_dat_file')
     parser.add_argument('out_dir')
-    parser.add_argument('-c', '--config', type=str, default='pga_map.conf',
-                        help='Config file name')
+    parser.add_argument('-c', '--config', type=str, default='PROC.PGA_MAP',
+                        help='Config file name (default: PROC.PGA_MAP)')
     args = parser.parse_args()
     return args
 
