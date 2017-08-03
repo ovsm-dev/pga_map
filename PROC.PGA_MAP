@@ -47,10 +47,9 @@ COPYRIGHT2|IPGP
 # -----------------------------------------------------------------------
 # --- specific parameter for this proc
 # Map configuration for Martinique
-MAP_XYLIM|-61.3,-60,75,14.35,14.92
+MAP_XYLIM|-61.3,-60.75,14.35,14.92
 TITLE_OFFSET|0.92
 
 # Map configuration for Guadeloupe
 #MAP_XYLIM|-61.90,-60.95,15.80,16.55
 #TITLE_OFFSET|0.85
-
