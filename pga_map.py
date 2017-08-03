@@ -9,6 +9,18 @@ Parses event XML files (ShakeMap) and plots PGAs in mg on a map.
 from __future__ import print_function
 import os
 import argparse
+try:
+    # Python2
+    from ConfigParser import ConfigParser
+except ModuleNotFoundError:
+    # Python3
+    from configparser import ConfigParser
+try:
+    # Python2
+    from StringIO import StringIO
+except ModuleNotFoundError:
+    # Python3
+    from io import StringIO
 from xml.dom import minidom
 from datetime import datetime
 import matplotlib as mpl
@@ -123,11 +135,11 @@ def plot_station_name(lon, lat, stname, ax):
     ])
 
 
-def plot_figure_text(event, pga_text):
+def plot_figure_text(event, pga_text, conf):
     figtitle = 'Peak Ground Acceleration '
     date = event['time'].strftime('%Y-%m-%d %H:%M:%S')
     figtitle += date
-    title_y = .92
+    title_y = float(conf['title_offset'])
     plt.figtext(.4, title_y, figtitle,
                 horizontalalignment='center',
                 verticalalignment='top',
@@ -162,7 +174,7 @@ def plot_figure_text(event, pga_text):
                     family='monospace')
 
 
-def plotmap(attributes, event, basename, zone):
+def plotmap(attributes, event, basename, conf):
     # Create a Stamen Terrain instance.
     stamen_terrain = cimgt.StamenTerrain()
 
@@ -170,7 +182,11 @@ def plotmap(attributes, event, basename, zone):
     fig, ax = plt.subplots(1, figsize=(10, 10),
                            subplot_kw={'projection': stamen_terrain.crs})
 
-    extent = (zone['lon0'], zone['lon1'], zone['lat0'], zone['lat1'])
+    lon0 = float(conf['lon0'])
+    lon1 = float(conf['lon1'])
+    lat0 = float(conf['lat0'])
+    lat1 = float(conf['lat1'])
+    extent = (lon0, lon1, lat0, lat1)
     ax.set_extent(extent)
 
     ax.add_image(stamen_terrain, 11)
@@ -187,9 +203,8 @@ def plotmap(attributes, event, basename, zone):
         cmp_attrib = attributes[cmp_id]
         lon = cmp_attrib['longitude']
         lat = cmp_attrib['latitude']
-        if not (zone['lon0'] <= lon <= zone['lon1'] and
-                zone['lat0'] <= lat <= zone['lat1']):
-                continue
+        if not (lon0 <= lon <= lon1 and lat0 <= lat <= lat1):
+            continue
         pga = cmp_attrib['pga']
         ax.plot(lon, lat, marker='^', markersize=12,
                 markeredgewidth=1, markeredgecolor='k',
@@ -204,7 +219,7 @@ def plotmap(attributes, event, basename, zone):
         pga_text_tmp += '{:>4s}: {:5.1f}\n'.format(stname, pga)
         n += 1
     pga_text.append(pga_text_tmp)
-    plot_figure_text(event, pga_text)
+    plot_figure_text(event, pga_text, conf)
 
     # Add a colorbar
     ax_divider = make_axes_locatable(ax)
@@ -252,20 +267,24 @@ def parse_args():
     parser.add_argument('xml_file')
     parser.add_argument('xml_dat_file')
     parser.add_argument('out_dir')
+    parser.add_argument('-c', '--config', type=str, default='pga_map.conf',
+                        help='Config file name')
     args = parser.parse_args()
     return args
 
 
+def parse_config(config_file):
+    # prepend a [root] namespace
+    conf_str = '[root]\n' + open(config_file, 'r').read()
+    conf_fp = StringIO(conf_str)
+    cfg = ConfigParser()
+    cfg.readfp(conf_fp)
+    return dict(cfg['root'])
+
+
 def main():
     args = parse_args()
-
-    # Defining interest zone
-    zone = {
-        'lon0': -61.30,
-        'lon1': -60.75,
-        'lat0': 14.35,
-        'lat1': 14.92
-        }
+    conf = parse_config(args.config)
 
     event = parse_event_xml(args.xml_file)
     attributes = parse_event_dat_xml(args.xml_dat_file)
@@ -280,7 +299,7 @@ def main():
         pass
     basename = '{}_{}'.format(event['id'], event['id_sc3'])
     basename = os.path.join(out_path, basename)
-    plotmap(attributes, event, basename, zone)
+    plotmap(attributes, event, basename, conf)
     write_attributes(event, attributes, basename)
 
 
