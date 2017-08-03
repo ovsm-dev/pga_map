@@ -139,7 +139,7 @@ def plot_figure_text(event, pga_text, conf):
     figtitle = 'Peak Ground Acceleration '
     date = event['time'].strftime('%Y-%m-%d %H:%M:%S')
     figtitle += date
-    title_y = float(conf['title_offset'])
+    title_y = float(conf['TITLE_OFFSET'])
     plt.figtext(.4, title_y, figtitle,
                 horizontalalignment='center',
                 verticalalignment='top',
@@ -182,10 +182,10 @@ def plotmap(attributes, event, basename, conf):
     fig, ax = plt.subplots(1, figsize=(10, 10),
                            subplot_kw={'projection': stamen_terrain.crs})
 
-    lon0 = float(conf['lon0'])
-    lon1 = float(conf['lon1'])
-    lat0 = float(conf['lat0'])
-    lat1 = float(conf['lat1'])
+    lon0 = float(conf['MAP_XYLIM'].split(',')[0])
+    lon1 = float(conf['MAP_XYLIM'].split(',')[1])
+    lat0 = float(conf['MAP_XYLIM'].split(',')[2])
+    lat1 = float(conf['MAP_XYLIM'].split(',')[3])
     extent = (lon0, lon1, lat0, lat1)
     ax.set_extent(extent)
 
@@ -273,11 +273,15 @@ def parse_args():
     return args
 
 
-def parse_config(config_file):
-    # prepend a [root] namespace
-    conf_str = '[root]\n' + open(config_file, 'r').read()
+def parse_config(config_file): 
+    # Transform initial "=" sign to comment and then all "|" signs to "="
+    conf_str = open(config_file, 'r').read().replace('=', '#').replace('|', '=')
+    # Prepend a [root] namespace for ConfigParser compatibility
+    conf_str = '[root]\n' + conf_str
     conf_fp = StringIO(conf_str)
     cfg = ConfigParser()
+    # Keep variable names in capital letters
+    cfg.optionxform = str
     cfg.readfp(conf_fp)
     return dict(cfg.items('root'))
 
