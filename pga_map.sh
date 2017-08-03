@@ -29,7 +29,7 @@ IFS=${oIFS}
 shakemapROOTvar=${PROC}_RAWDATA
 if [[ ${!shakemapROOTvar} =~ .*\$\{* ]]
 then  shakemapROOT=$(eval echo ${!shakemapROOTvar})
-else  shakemapROOT=echo ${!shakemapROOTvar}
+else  shakemapROOT="${!shakemapROOTvar}"
 fi
 
 # If the input directory doesn't exists, end of the program
@@ -41,17 +41,17 @@ then
 fi
 
 # Search for files created or updated in the ${delay} last minutes
-updated_files=$(find ${shakemapROOT} -type f -mmin -${delay} -iname event_dat.xml)
+updated_files=($(find ${shakemapROOT} -type f -mmin -${delay} -iname event_dat.xml))
 
 # Iterate over files and create graphs
 for k in $(seq 0 $((${#updated_files[*]} - 1)))
 do
-	evt_file="$(dirname ${updated_files[$k]})/event.xml"
-	dat_file=${updated_files[$k]}
-	if [ -s ${evt_file} && -s ${dat_file} ]
+	evt_file="$(dirname ${updated_files[k]})/event.xml"
+	dat_file=${updated_files[k]}
+	if [ -s ${evt_file} ] && [ -s ${dat_file} ]
 	then python ${WO__ROOT_CODE}/python/pga_map.py ${evt_file} ${dat_file} ${outROOT} -c ${WO__PATH_PROCS}/${PROC}/${PROC}.conf
 	else
-		echo "$(dirname ${updated_files[$k]})"
+		echo "$(dirname ${updated_files[k]})"
 		echo "!! One of the input files is empty, skipping event !!"
 	fi
 done
