@@ -4,7 +4,8 @@
 Parses event XML files (ShakeMap) and plots PGAs in mg on a map.
 
 (c) 2017 - Claudio Satriano <satriano@ipgp.fr>
-           Felix Léger <leger@ipgp.fr>
+           Félix Léger <leger@ipgp.fr>
+           Jean-Marie Saurel <saurel@ipgp.fr>
 """
 from __future__ import print_function
 import os
