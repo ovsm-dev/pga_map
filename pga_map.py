@@ -279,7 +279,7 @@ def parse_config(config_file):
     conf_fp = StringIO(conf_str)
     cfg = ConfigParser()
     cfg.readfp(conf_fp)
-    return dict(cfg['root'])
+    return dict(cfg.items('root'))
 
 
 def main():
