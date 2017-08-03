@@ -49,7 +49,7 @@ do
 	evt_file="$(dirname ${updated_files[$k]})/event.xml"
 	dat_file=${updated_files[$k]}
 	if [ -s ${evt_file} && -s ${dat_file} ]
-	then python pga_map.py ${evt_file} ${dat_file} ${outROOT} -c ${WO__PATH_PROCS}/${PROC}/${PROC}.conf
+	then python ${WO__ROOT_CODE}/python/pga_map.py ${evt_file} ${dat_file} ${outROOT} -c ${WO__PATH_PROCS}/${PROC}/${PROC}.conf
 	else
 		echo "$(dirname ${updated_files[$k]})"
 		echo "!! One of the input files is empty, skipping event !!"
