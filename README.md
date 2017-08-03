@@ -24,8 +24,10 @@ Edit the TITLE_OFFSET value for a beautiful graph
 
 Create a job in the scheduler with the following values
 xeq1 = $WEBOBS{ROOT_CODE}/shells/pga_map.sh
+Set the first argument to the PROC NAME
+xeq2 = PYRAP
 Set the delay the PROC looks for modifications according to the job interval
 For example, if the scheduler launches the PROC every 5 minutes (300 seconds)
 set the delay to 15 minutes
-xeq2 = 15
+xeq3 = 15
 
