@@ -203,18 +203,27 @@ def plotmap(attributes, event, basename, conf):
     # ax.coastlines('10m')
     ax.gridlines(draw_labels=True, color='#777777', linestyle='--')
 
+    # select cmp_ids inside geographic area
+    cmp_ids = [cmp_id for cmp_id in attributes
+               if lon0 <= attributes[cmp_id]['longitude'] <= lon1
+               and lat0 <= attributes[cmp_id]['latitude'] <= lat1]
+    if len(cmp_ids) == 0:
+        print('No stations in the selected area. No plot generated.')
+        return
+    # sort cmp_ids by station name
+    cmp_ids = sorted(cmp_ids, key=lambda x: x.split('.')[1])
+    # find max pga and corresponding station
+    pga_list = [(cmp_id.split('.')[1], attributes[cmp_id]['pga'])
+                for cmp_id in cmp_ids]
+    pga_max_sta, pga_max = max(pga_list, key=lambda x: x[1])
+
     pga_text = []
     pga_text_tmp = ''
     norm, cmap = colormap()
-    # sort cmp_ids by station name
-    cmp_ids = sorted(attributes, key=lambda x: x.split('.')[1])
-    n = 0
-    for cmp_id in cmp_ids:
+    for n, cmp_id in enumerate(cmp_ids):
         cmp_attrib = attributes[cmp_id]
         lon = cmp_attrib['longitude']
         lat = cmp_attrib['latitude']
-        if not (lon0 <= lon <= lon1 and lat0 <= lat <= lat1):
-            continue
         pga = cmp_attrib['pga']
         ax.plot(lon, lat, marker='^', markersize=12,
                 markeredgewidth=1, markeredgecolor='k',
@@ -226,11 +235,10 @@ def plotmap(attributes, event, basename, conf):
         if n > 0 and n % 7 == 0:
             pga_text.append(pga_text_tmp)
             pga_text_tmp = ''
-        pga_text_tmp += '{:>4s}: {:5.1f}\n'.format(stname, pga)
-        n += 1
-    if n == 0:
-        print('No stations in the selected area. No plot generated.')
-        return
+        # Add a '*' to station with max pga:
+        if stname == pga_max_sta:
+            stname = '*' + stname
+        pga_text_tmp += '{:>5s}: {:5.1f}\n'.format(stname, pga)
     pga_text.append(pga_text_tmp)
     plot_figure_text(event, pga_text, conf)
 
