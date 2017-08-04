@@ -257,12 +257,12 @@ def plotmap(attributes, event, basename, conf):
     outfile = basename + '_pga_map.png'
     fig.savefig(outfile, dpi=150, bbox_inches='tight')
     print('\nMap plot saved to {}'.format(outfile))
+    outfile = basename + '_pga_map.pdf'
+    fig.savefig(outfile, dpi=150, bbox_inches='tight')
+    print('\nMap plot saved to {}'.format(outfile))
     outfile = basename + '_pga_map.jpg'
     fig.savefig(outfile, dpi=50, bbox_inches='tight')
     print('\nThumbnail plot saved to {}'.format(outfile))
-    # outfile = basename + '_map.pdf'
-    # fig.savefig(outfile, dpi=300, bbox_inches='tight')
-    # print('\nMap plot saved to {}'.format(outfile))
 
 
 def write_attributes(event, attributes, basename):
@@ -333,7 +333,7 @@ def main():
     plotmap(attributes, event, basename, conf)
     write_attributes(event, attributes, basename)
     os.chdir(out_path)
-    for ext in ['txt', 'jpg', 'png']:
+    for ext in ['txt', 'jpg', 'png', 'pdf']:
         filename = fileprefix + '_pga_map.' + ext
         if not os.access(filename,  os.F_OK):
             continue
