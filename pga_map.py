@@ -43,21 +43,16 @@ def parse_event_xml(xml_file):
     event = dict()
     xmldoc = minidom.parse(xml_file)
     tag_earthquake = xmldoc.getElementsByTagName('earthquake')[0]
-    event['year'] = "{:4d}".format(int(
-                        tag_earthquake.attributes['year'].value))
-    event['month'] = "{:02d}".format(int(
-                        tag_earthquake.attributes['month'].value))
-    event['day'] = "{:02d}".format(int(
-                        tag_earthquake.attributes['day'].value))
-    event['hour'] = "{:02d}".format(int(
-                        tag_earthquake.attributes['hour'].value))
-    event['minute'] = "{:02d}".format(int(
-                        tag_earthquake.attributes['minute'].value))
-    event['second'] = "{:02d}".format(int(
-                        tag_earthquake.attributes['second'].value))
-    event['timestr'] = event['year'] + event['month'] + event['day'] + 'T'\
-                        + event['hour'] + event['minute'] + event['second']
-    event['time'] = datetime.strptime(event['timestr'],  '%Y%m%dT%H%M%S')
+    event['year'] = int(tag_earthquake.attributes['year'].value)
+    event['month'] = int(tag_earthquake.attributes['month'].value)
+    event['day'] = int(tag_earthquake.attributes['day'].value)
+    event['hour'] = int(tag_earthquake.attributes['hour'].value)
+    event['minute'] = int(tag_earthquake.attributes['minute'].value)
+    event['second'] = int(tag_earthquake.attributes['second'].value)
+    event['time'] = datetime(
+        event['year'], event['month'], event['day'],
+        event['hour'], event['minute'], event['second'])
+    event['timestr'] = event['time'].strftime('%Y%m%dT%H%M%S')
     locstring = tag_earthquake.attributes['locstring'].value
     event['id_sc3'] = locstring.split(' / ')[0]
     lat = tag_earthquake.attributes['lat'].value
@@ -312,9 +307,9 @@ def main():
     event = parse_event_xml(args.xml_file)
     attributes = parse_event_dat_xml(args.xml_dat_file)
 
-    year = event['year']
-    month = event['month']
-    day = event['day']
+    year = '{:04d}'.format(event['year'])
+    month = '{:02d}'.format(event['month'])
+    day = '{:02d}'.format(event['day'])
     out_path = os.path.join(args.out_dir, year, month, day, event['id_sc3'])
     try:
         os.makedirs(out_path)
