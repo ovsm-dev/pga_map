@@ -246,15 +246,18 @@ def plotmap(attributes, event, basename, conf):
     cax.set_ylabel('PGA (mg)')
 
     outfile = basename + '_pga_map.png'
-    fig.savefig(outfile, dpi=300, bbox_inches='tight')
+    fig.savefig(outfile, dpi=150, bbox_inches='tight')
     print('\nMap plot saved to {}'.format(outfile))
+    outfile = basename + '_pga_map.jpg'
+    fig.savefig(outfile, dpi=75, bbox_inches='tight')
+    print('\nThumbnail plot saved to {}'.format(outfile))
     # outfile = basename + '_map.pdf'
     # fig.savefig(outfile, dpi=300, bbox_inches='tight')
     # print('\nMap plot saved to {}'.format(outfile))
 
 
 def write_attributes(event, attributes, basename):
-    outfile = basename + '_attributes.txt'
+    outfile = basename + '_pga_map.txt'
     fp = open(outfile, 'w')
     fp.write(
         '#{} {} lon {:8.4f} lat {:8.4f} depth {:8.3f} mag {:.2f}\n'.format(
