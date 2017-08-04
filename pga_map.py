@@ -325,9 +325,10 @@ def main():
     plotmap(attributes, event, basename, conf)
     write_attributes(event, attributes, basename)
     os.chdir(out_path)
-    os.symlink(fileprefix + '_pga_map.jpg', 'pga_map.jpg')
-    os.symlink(fileprefix + '_pga_map.png', 'pga_map.png')
-    os.symlink(fileprefix + '_pga_map.txt', 'pga_map.txt')
+    for ext in ['txt', 'jpg', 'png']:
+        if os.access('pga_map.' + ext,  os.F_OK):
+            os.remove('pga_map.' + ext)
+        os.symlink(fileprefix + '_pga_map.' + ext, 'pga_map.' + ext)
 
 
 if __name__ == '__main__':
