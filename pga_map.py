@@ -249,7 +249,7 @@ def plotmap(attributes, event, basename, conf):
     fig.savefig(outfile, dpi=150, bbox_inches='tight')
     print('\nMap plot saved to {}'.format(outfile))
     outfile = basename + '_pga_map.jpg'
-    fig.savefig(outfile, dpi=75, bbox_inches='tight')
+    fig.savefig(outfile, dpi=30, bbox_inches='tight')
     print('\nThumbnail plot saved to {}'.format(outfile))
     # outfile = basename + '_map.pdf'
     # fig.savefig(outfile, dpi=300, bbox_inches='tight')
