@@ -14,22 +14,21 @@ fi
 source /etc/webobs.d/../CODE/shells/readconf
 
 # Set output path directory, create directory if it doesn't exists
-outROOT="${WO__ROOT_OUTR}/${PROC}"
+outROOT="${WO__ROOT_OUTG}/PROC.${PROC}/${WO__PATH_OUTG_EVENTS}"
 if [ ! -d ${outROOT} ]
 then mkdir -p ${outROOT}
 fi
 
 # Load the PROC variables
 oIFS=${IFS}; IFS=$'\n'
-LEXP=($(gawk -v proc=${PROC} -F '|' '!/^(#|$|\r|=)/{gsub(/WEBOBS{/,"{WO__",$2);if(length($2)>1)printf("%s_%s=%s\n",proc,$1,$2)}' ${WO__PATH_PROCS}/${PROC}/${PROC}.conf))
+LEXP=($(gawk -F '|' '!/^(#|$|\r|=)/{gsub(/WEBOBS{/,"{WO__",$2);if(length($2)>1)printf("P_%s=%s\n",$1,$2)}' ${WO__PATH_PROCS}/${PROC}/${PROC}.conf | dos2unix))
 for i in $(seq 0 1 $(( ${#LEXP[@]}-1 )) ); do export ${LEXP[$i]}; done
 IFS=${oIFS}
 
 # Input data is given by the rawdata path from the PROC
-shakemapROOTvar=${PROC}_RAWDATA
-if [[ ${!shakemapROOTvar} =~ .*\$\{* ]]
-then  shakemapROOT=$(eval echo ${!shakemapROOTvar})
-else  shakemapROOT="${!shakemapROOTvar}"
+if [[ ${P_RAWDATA} =~ .*\$\{* ]]
+then  shakemapROOT=$(eval echo ${P_RAWDATA})
+else  shakemapROOT="${P_RAWDATA}"
 fi
 
 # If the input directory doesn't exists, end of the program
