@@ -42,13 +42,20 @@ def parse_event_xml(xml_file):
     event = dict()
     xmldoc = minidom.parse(xml_file)
     tag_earthquake = xmldoc.getElementsByTagName('earthquake')[0]
-    event['year'] = "{:4d}".format(int(tag_earthquake.attributes['year'].value))
-    event['month'] = "{:02d}".format(int(tag_earthquake.attributes['month'].value))
-    event['day'] = "{:02d}".format(int(tag_earthquake.attributes['day'].value))
-    event['hour'] = "{:02d}".format(int(tag_earthquake.attributes['hour'].value))
-    event['minute'] = "{:02d}".format(int(tag_earthquake.attributes['minute'].value))
-    event['second'] = "{:02d}".format(int(tag_earthquake.attributes['second'].value))
-    event['timestr'] = event['year'] + event['month'] + event['day'] + 'T' + event['hour'] + event['minute'] + event['second']
+    event['year'] = "{:4d}".format(int(
+                        tag_earthquake.attributes['year'].value))
+    event['month'] = "{:02d}".format(int(
+                        tag_earthquake.attributes['month'].value))
+    event['day'] = "{:02d}".format(int(
+                        tag_earthquake.attributes['day'].value))
+    event['hour'] = "{:02d}".format(int(
+                        tag_earthquake.attributes['hour'].value))
+    event['minute'] = "{:02d}".format(int(
+                        tag_earthquake.attributes['minute'].value))
+    event['second'] = "{:02d}".format(int(
+                        tag_earthquake.attributes['second'].value))
+    event['timestr'] = event['year'] + event['month'] + event['day'] + 'T'\
+                        + event['hour'] + event['minute'] + event['second']
     event['time'] = datetime.strptime(event['timestr'],  '%Y%m%dT%H%M%S')
     locstring = tag_earthquake.attributes['locstring'].value
     event['id_sc3'] = locstring.split(' / ')[0]
