@@ -19,7 +19,12 @@ Parses event XML files (ShakeMap) and plots PGAs in mg on a map.
 
         cp pga_map.sh /etc/webobs.d/../CODE/shells/
 
-  - Under `WebObs`, create a new PROC and select
+  - Under `WebObs`, check the variable `PYTHON_PRGM` from
+     `/etc/webobs.d/WEBOBS.rc` according to your Python installation:
+
+        PYTHON_PRGM|/opt/webobs/miniconda3/python
+
+  - Create a new PROC and select
     `PROC : Strong Motion mapping` from the list.
 
   - Edit the `RAWDATA` variable to point to the root directory
