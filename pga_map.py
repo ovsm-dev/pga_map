@@ -228,6 +228,9 @@ def plotmap(attributes, event, basename, conf):
             pga_text_tmp = ''
         pga_text_tmp += '{:>4s}: {:5.1f}\n'.format(stname, pga)
         n += 1
+    if n == 0:
+        print('No stations in the selected area. No plot generated.')
+        return
     pga_text.append(pga_text_tmp)
     plot_figure_text(event, pga_text, conf)
 
@@ -321,9 +324,12 @@ def main():
     write_attributes(event, attributes, basename)
     os.chdir(out_path)
     for ext in ['txt', 'jpg', 'png']:
+        filename = fileprefix + '_pga_map.' + ext
+        if not os.access(filename,  os.F_OK):
+            continue
         if os.access('pga_map.' + ext,  os.F_OK):
             os.remove('pga_map.' + ext)
-        os.symlink(fileprefix + '_pga_map.' + ext, 'pga_map.' + ext)
+        os.symlink(filename, 'pga_map.' + ext)
 
 
 if __name__ == '__main__':
