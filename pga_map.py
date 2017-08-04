@@ -122,18 +122,18 @@ def plot_station_name(lon, lat, stname, ax):
     geodetic_transform = ccrs.Geodetic()._as_mpl_transform(ax)
 
     def text_transform(x):
-        return transforms.offset_copy(geodetic_transform,
-                                      units='dots', x=x)
+        return transforms.offset_copy(geodetic_transform, fig=ax.figure,
+                                      units='points', x=x)
 
     if stname in ['MPLM', 'LAM']:
-        trans = text_transform(50)
+        trans = text_transform(12)
         ha = 'left'
         if stname == 'LAM':
             va = 'bottom'
         else:
             va = 'center'
     else:
-        trans = text_transform(-50)
+        trans = text_transform(-12)
         ha = 'right'
         va = 'center'
     t = plt.text(lon, lat, stname, size=8, weight='bold',
@@ -245,7 +245,7 @@ def plotmap(attributes, event, basename, conf):
     fig.savefig(outfile, dpi=150, bbox_inches='tight')
     print('\nMap plot saved to {}'.format(outfile))
     outfile = basename + '_pga_map.jpg'
-    fig.savefig(outfile, dpi=30, bbox_inches='tight')
+    fig.savefig(outfile, dpi=50, bbox_inches='tight')
     print('\nThumbnail plot saved to {}'.format(outfile))
     # outfile = basename + '_map.pdf'
     # fig.savefig(outfile, dpi=300, bbox_inches='tight')
