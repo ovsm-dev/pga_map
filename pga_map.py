@@ -319,10 +319,14 @@ def main():
         os.makedirs(out_path)
     except FileExistsError:
         pass
-    basename = '{}_{}'.format(event['timestr'], event['id_sc3'])
-    basename = os.path.join(out_path, basename)
+    fileprefix = '{}_{}'.format(event['timestr'], event['id_sc3'])
+    basename = os.path.join(out_path, fileprefix)
     plotmap(attributes, event, basename, conf)
     write_attributes(event, attributes, basename)
+    os.chdir(out_path)
+    os.symlink(fileprefix + '_pga_map.jpg', 'pga_map.jpg')
+    os.symlink(fileprefix + '_pga_map.png', 'pga_map.png')
+    os.symlink(fileprefix + '_pga_map.txt', 'pga_map.txt')
 
 
 if __name__ == '__main__':
