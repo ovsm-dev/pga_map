@@ -42,8 +42,14 @@ def parse_event_xml(xml_file):
     event = dict()
     xmldoc = minidom.parse(xml_file)
     tag_earthquake = xmldoc.getElementsByTagName('earthquake')[0]
-    event['id'] = tag_earthquake.attributes['id'].value
-    event['time'] = datetime.strptime(event['id'], '%Y%m%d%H%M%S')
+    event['year'] = "{:4d}".format(int(tag_earthquake.attributes['year'].value))
+    event['month'] = "{:02d}".format(int(tag_earthquake.attributes['month'].value))
+    event['day'] = "{:02d}".format(int(tag_earthquake.attributes['day'].value))
+    event['hour'] = "{:02d}".format(int(tag_earthquake.attributes['hour'].value))
+    event['minute'] = "{:02d}".format(int(tag_earthquake.attributes['minute'].value))
+    event['second'] = "{:02d}".format(int(tag_earthquake.attributes['second'].value))
+    event['timestr'] = event['year'] + event['month'] + event['day'] + 'T' + event['hour'] + event['minute'] + event['second']
+    event['time'] = datetime.strptime(event['timestr'],  '%Y%m%dT%H%M%S')
     locstring = tag_earthquake.attributes['locstring'].value
     event['id_sc3'] = locstring.split(' / ')[0]
     lat = tag_earthquake.attributes['lat'].value
@@ -245,7 +251,7 @@ def write_attributes(event, attributes, basename):
     fp = open(outfile, 'w')
     fp.write(
         '#{} {} lon {:8.4f} lat {:8.4f} depth {:8.3f} mag {:.2f}\n'.format(
-            event['id_sc3'], event['id'],
+            event['id_sc3'], event['timestr'],
             event['lon'], event['lat'], event['depth'], event['mag'])
         )
     fp.write('#id                pga      pgv    psa03   psa10   psa30\n')
@@ -295,15 +301,15 @@ def main():
     event = parse_event_xml(args.xml_file)
     attributes = parse_event_dat_xml(args.xml_dat_file)
 
-    year = event['id'][:4]
-    month = event['id'][4:6]
-    day = event['id'][6:8]
+    year = event['year']
+    month = event['month']
+    day = event['day']
     out_path = os.path.join(args.out_dir, year, month, day, event['id_sc3'])
     try:
         os.makedirs(out_path)
     except FileExistsError:
         pass
-    basename = '{}_{}'.format(event['id'], event['id_sc3'])
+    basename = '{}_{}'.format(event['timestr'], event['id_sc3'])
     basename = os.path.join(out_path, basename)
     plotmap(attributes, event, basename, conf)
     write_attributes(event, attributes, basename)
