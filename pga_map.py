@@ -25,6 +25,7 @@ except ModuleNotFoundError:
 from xml.dom import minidom
 from datetime import datetime
 import matplotlib as mpl
+mpl.use('agg')
 import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
 import matplotlib.patheffects as path_effects
