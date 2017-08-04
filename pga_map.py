@@ -110,14 +110,6 @@ def parse_event_dat_xml(xml_file):
     return attributes
 
 
-def colormap():
-    # Normalizing color scale
-    norm = mpl.colors.Normalize(vmin=0, vmax=5)
-    # YlOrRd colormap
-    cmap = plt.cm.YlOrRd
-    return norm, cmap
-
-
 def plot_station_name(lon, lat, stname, ax):
     geodetic_transform = ccrs.Geodetic()._as_mpl_transform(ax)
 
@@ -184,6 +176,14 @@ def plot_figure_text(event, pga_text, conf):
                     family='monospace')
 
 
+def colormap(vmin, vmax):
+    # Normalizing color scale
+    norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+    # YlOrRd colormap
+    cmap = plt.cm.YlOrRd
+    return norm, cmap
+
+
 def plotmap(attributes, event, basename, conf):
     # Create a Stamen Terrain instance.
     stamen_terrain = cimgt.StamenTerrain()
@@ -219,7 +219,9 @@ def plotmap(attributes, event, basename, conf):
 
     pga_text = []
     pga_text_tmp = ''
-    norm, cmap = colormap()
+    cmap_min = float(conf['COLORBAR_PGA_MIN_MAX'].split(',')[0])
+    cmap_max = float(conf['COLORBAR_PGA_MIN_MAX'].split(',')[1])
+    norm, cmap = colormap(cmap_min, cmap_max)
     for n, cmp_id in enumerate(cmp_ids):
         cmp_attrib = attributes[cmp_id]
         lon = cmp_attrib['longitude']
