@@ -39,9 +39,14 @@ then
 	exit 1
 fi
 
+# Say when we start
+echo ""
+echo "=== $(basename $0 | cut -d '.' -f 1) ${PROC} ${delay} : Process started on $(date)"
+echo ""
+
 # Search for files created or updated in the ${delay} last minutes
-updated_files=($(find ${shakemapROOT} -type f -mmin -${delay} -iname event_dat.xml))
-echo "--- ${#updated_files[*]} new or modified files found"
+updated_files=($(find ${shakemapROOT} -type f -mmin -${delay} -iname event_dat.xml | sort))
+echo "--- ${#updated_files[*]} new or modified files found ---"
 
 # Iterate over files and create graphs
 for k in $(seq 0 $((${#updated_files[*]} - 1)))
@@ -50,13 +55,21 @@ do
 	dat_file=${updated_files[k]}
 	if [ -s ${evt_file} ] && [ -s ${dat_file} ]
 	then
-		echo "----- working on $(dirname ${updated_files[k]})"
+		echo "  --- working on $(dirname ${updated_files[k]}) ---"
 		${WO__PYTHON_PRGM} ${WO__ROOT_CODE}/python/pga_map.py ${evt_file} ${dat_file} ${outROOT} -c ${WO__PATH_PROCS}/${PROC}/${PROC}.conf
+		echo "  --- $(echo $k | awk '{print $0+1}') / ${#updated_files[*]} finished ---"
+
 	else
 		echo "$(dirname ${updated_files[k]})"
 		echo "!! One of the input files is empty, skipping event !!"
 	fi
 done
+
+# Say when we stop
+echo ""
+echo "=== $(basename $0 | cut -d '.' -f 1) ${PROC} ${delay} : Process ended on $(date)"
+echo ""
+
 
 exit 0
 
