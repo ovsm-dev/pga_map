@@ -5,6 +5,26 @@ Parses event XML files (ShakeMap) and plots PGAs in mg on a map.
 
 ## Installation
 
+### Installation of Python environment through Miniconda
+
+  - Download Miniconda from
+    [conda.io/miniconda.html](https://conda.io/miniconda.html).    
+    Python version 3.x is preferred over 2.x.
+    
+  - Run the installer. You might want to answer "no" to the
+    request of updating your `.bashrc`, to avoid ovverriding
+    the system `python` executable with the Miniconda one
+    (Other WebObs PROCs might use different versions of Python.)
+    
+  - Install `matplotlib` and `cartopy` through the `conda`
+    package manager:
+    
+        ~/miniconda3/conda install matplotlib
+        ~/miniconda3/conda install -c conda-forge cartopy
+
+
+### Installation of the WebObs PROC
+
   - If not included in your WebObs release, place the PGA_MAP.conf
     file in `/etc/webobs.d/../CODE/tplates`:
 
@@ -20,7 +40,8 @@ Parses event XML files (ShakeMap) and plots PGAs in mg on a map.
         cp pga_map.sh /etc/webobs.d/../CODE/shells/
 
   - Under `WebObs`, check the variable `PYTHON_PRGM` from
-     `/etc/webobs.d/WEBOBS.rc` according to your Python installation:
+    `/etc/webobs.d/WEBOBS.rc` according to your Python
+    installation:
 
         PYTHON_PRGM|/opt/webobs/miniconda3/python
 
