@@ -8,17 +8,17 @@ Parses event XML files (ShakeMap) and plots PGAs in mg on a map.
 ### Installation of Python environment through Miniconda
 
   - Download Miniconda from
-    [conda.io/miniconda.html](https://conda.io/miniconda.html).    
+    [conda.io/miniconda.html](https://conda.io/miniconda.html).
     Python version 3.x is preferred over 2.x.
-    
+
   - Run the installer. You might want to answer "no" to the
     request of updating your `.bashrc`, to avoid ovverriding
     the system `python` executable with the Miniconda one
     (Other WebObs PROCs might use different versions of Python.)
-    
+
   - Install `matplotlib` and `cartopy` through the `conda`
     package manager:
-    
+
         ~/miniconda3/conda install matplotlib
         ~/miniconda3/conda install -c conda-forge cartopy
 
@@ -55,19 +55,17 @@ Parses event XML files (ShakeMap) and plots PGAs in mg on a map.
 
         lonmin,lonmax,latmin,latmax
 
-  - Edit the `TITLE_OFFSET` value to properly place the tile.
-
   - Create a job in the scheduler with the following values:
 
         xeq1 = $WEBOBS{ROOT_CODE}/shells/pga_map.sh
 
   - Set the first argument to the PROC NAME:
-    
+
         xeq2 = PYRAP
-    
+
   - Set the delay the PROC looks for modifications according to
-    the job interval. For example, if the scheduler launches the 
-    PROC every 5 minutes (300 seconds), set the delay to 15 
+    the job interval. For example, if the scheduler launches the
+    PROC every 5 minutes (300 seconds), set the delay to 15
     minutes:
 
         xeq3 = 15
