@@ -10,6 +10,7 @@ Parses event XML files (ShakeMap) and plots PGAs in mg on a map.
 from __future__ import print_function
 import os
 import shutil
+from glob import glob
 import argparse
 try:
     # Python2
@@ -25,6 +26,7 @@ except ModuleNotFoundError:
     from io import StringIO
 from xml.dom import minidom
 from datetime import datetime
+import numpy as np
 import matplotlib as mpl
 mpl.use('agg')  # NOQA
 import matplotlib.pyplot as plt
@@ -33,6 +35,7 @@ import matplotlib.patheffects as path_effects
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 import cartopy.io.img_tiles as cimgt
 import cartopy.crs as ccrs
+from pyproj import Geod
 
 
 class PgaMap(object):
@@ -203,7 +206,7 @@ class PgaMap(object):
         cmp_ids = sorted(cmp_ids, key=lambda x: x.split('.')[1])
         return cmp_ids
 
-    def plotmap(self):
+    def plot_map(self):
         """Plot the PGA map."""
         # Create a Stamen Terrain instance.
         stamen_terrain = cimgt.StamenTerrain()
@@ -218,12 +221,73 @@ class PgaMap(object):
         ax.add_image(stamen_terrain, 11)
         # ax.coastlines('10m')
         ax.gridlines(draw_labels=True, color='#777777', linestyle='--')
+        # gl = ax.gridlines(draw_labels=True)
+        # gl.xlines = False
+        # gl.ylines = False
 
-        cmp_ids = self._select_stations_pga()
+        g = Geod(ellps='WGS84')
+        evlat = self.event['lat']
+        evlon = self.event['lon']
+        # Following values are for testing
+        # evlat = 14.6
+        # evlon = -61
+        # evlat = 14.9
+        # evlon = -60.8
+        # evlat = 14.4
+        # evlon = -61.2
+        # evlat = 12.4
+        # evlon = -63.2
+        ax.plot(evlon, evlat, marker='*', markersize=12,
+                markeredgewidth=1, markeredgecolor='k',
+                color='green', transform=ccrs.Geodetic(),
+                zorder=10)
+        evdepth = self.event['depth']
+        for hypo_dist in np.arange(10, 500, 10):
+            if hypo_dist <= evdepth:
+                continue
+            dist = (hypo_dist**2 - evdepth**2)**0.5
+            azimuths = np.arange(0, 360, 1)
+            circle = np.array(
+                [g.fwd(evlon, evlat, az, dist*1e3)[0:2] for az in azimuths]
+            )
+            dlon = (self.lon1-self.lon0)*0.01
+            dlat = (self.lat1-self.lat0)*0.01
+            circle_visible = circle[
+                (circle[:, 0] > self.lon0+dlon) &
+                (circle[:, 0] < self.lon1-dlon) &
+                (circle[:, 1] > self.lat0+dlat) &
+                (circle[:, 1] < self.lat1-dlat)
+            ]
+            if len(circle_visible) < 2:
+                continue
+            p0 = circle_visible[np.argmax(circle_visible[:, 0])]
+            p1 = circle_visible[np.argmax(circle_visible[:, 1])]
+            ax.plot(circle[:, 0], circle[:, 1],
+                    color='#777777', linestyle='--',
+                    transform=ccrs.Geodetic())
+            dist_text = '{:d} km'.format(hypo_dist)
+            t = plt.text(p0[0], p0[1], dist_text, size=6, weight='bold',
+                         verticalalignment='center',
+                         horizontalalignment='right',
+                         transform=ccrs.Geodetic(), zorder=10)
+            t.set_path_effects([
+                path_effects.Stroke(linewidth=0.8, foreground='white'),
+                path_effects.Normal()
+            ])
+            t = plt.text(p1[0], p1[1], dist_text, size=6, weight='bold',
+                         verticalalignment='center',
+                         horizontalalignment='left',
+                         transform=ccrs.Geodetic(), zorder=10)
+            t.set_path_effects([
+                path_effects.Stroke(linewidth=0.8, foreground='white'),
+                path_effects.Normal()
+            ])
 
         cmap_min = float(self.conf['COLORBAR_PGA_MIN_MAX'].split(',')[0])
         cmap_max = float(self.conf['COLORBAR_PGA_MIN_MAX'].split(',')[1])
         norm, cmap = self._colormap(cmap_min, cmap_max)
+
+        cmp_ids = self._select_stations_pga()
         for n, cmp_id in enumerate(cmp_ids):
             cmp_attrib = self.attributes[cmp_id]
             lon = cmp_attrib['longitude']
@@ -250,6 +314,50 @@ class PgaMap(object):
         outfile = self.basename + '_pga_map_fig.png'
         fig.savefig(outfile, dpi=300, bbox_inches='tight')
         print('\nMap plot saved to {}'.format(outfile))
+
+    def plot_pga_dist(self):
+        """Plot PGA as a function of distance."""
+        event = self.event
+        fig, ax = plt.subplots(figsize=(8, 2.5))
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        ax.set_xlim(0.5, 500)
+        ax.set_ylim(1e-2, 1e6)
+        ax.grid(True, which='both', ls='--', color='#bbbbbb')
+        ax.set_xlabel('Hypocentral distance (km)')
+        ax.set_ylabel('PGA (mg)')
+        # plot the b3 law (Beauducel et al., 2011)
+        a = 0.61755
+        b = -0.0030746
+        c = -3.3968
+        M = event['mag']
+        R = np.logspace(-1, 3, 50)
+        PGA = 10.**(a*M + b*R - np.log10(R) + c)
+        b3curve, = ax.plot(
+            R, PGA*1e3, label=r'$B^3$: M {:.1f}'.format(M))
+        for M in range(3, 9):
+            PGA = 10.**(a*M + b*R - np.log10(R) + c)
+            b3curve_other, = ax.plot(
+                R, PGA*1e3, color='#999999', label=r'$B^3$: M 3 to 8')
+        ax.legend(handles=(b3curve, b3curve_other))
+
+        g = Geod(ellps='WGS84')
+        evlat = event['lat']
+        evlon = event['lon']
+        evdepth = event['depth']
+        cmp_ids = self._select_stations_pga()
+        for cmp_id in cmp_ids:
+            cmp_attrib = self.attributes[cmp_id]
+            lon = cmp_attrib['longitude']
+            lat = cmp_attrib['latitude']
+            _, _, dist = g.inv(lon, lat, evlon, evlat)
+            dist /= 1000.
+            hypo_dist = (dist**2 + evdepth**2)**0.5
+            pga = cmp_attrib['pga']
+            ax.scatter(hypo_dist, pga, color='red', edgecolor='k', zorder=99)
+        outfile = self.basename + '_pga_dist_fig.png'
+        fig.savefig(outfile, dpi=300, bbox_inches='tight')
+        print('\nPGA-dist plot saved to {}'.format(outfile))
 
     def write_html(self):
         """Write the output HTML file."""
@@ -319,12 +427,33 @@ class PgaMap(object):
         map_fig_file = self.basename + '_pga_map_fig.png'
         map_fig_file = os.path.basename(map_fig_file)
         html = html.replace('%MAP', map_fig_file)
+        # PGA-dist file
+        pga_dist_fig_file = self.basename + '_pga_dist_fig.png'
+        pga_dist_fig_file = os.path.basename(pga_dist_fig_file)
+        html = html.replace('%PGA_DIST', pga_dist_fig_file)
+        # Footer
+        datestr = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        footer_text = '(c) OVS-IPGP ' + datestr
+        html = html.replace('%FOOTER_TEXT', footer_text)
 
         # Write HTML file
         html_file = self.basename + '_pga_map.html'
         with open(html_file, 'w') as fp:
             fp.write(html)
-        shutil.copy('styles.css', self.out_path)
+
+        # Link CSS file and logos
+        script_path = os.path.dirname(os.path.abspath(__file__))
+        styles_orig = os.path.join(script_path, 'styles.css')
+        styles_link = os.path.join(self.out_path, 'styles.css')
+        if os.access(styles_link,  os.F_OK):
+            os.remove(styles_link)
+        os.symlink(styles_orig, styles_link)
+        logos = os.path.join(script_path, 'logos', '*.png')
+        for logo in glob(logos):
+            logo_link = os.path.join(self.out_path, os.path.basename(logo))
+            if os.access(logo_link,  os.F_OK):
+                os.remove(logo_link)
+            os.symlink(logo, logo_link)
 
     def write_attributes(self):
         """Write attributes text file."""
@@ -383,7 +512,8 @@ def main():
     pgamap.parse_event_xml(args.xml_file)
     pgamap.parse_event_dat_xml(args.xml_dat_file)
     pgamap.make_path(args.out_dir)
-    pgamap.plotmap()
+    pgamap.plot_map()
+    pgamap.plot_pga_dist()
     pgamap.write_html()
     pgamap.write_attributes()
     pgamap.make_symlinks()
