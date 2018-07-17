@@ -19,8 +19,12 @@ Parses event XML files (ShakeMap) and plots PGAs in mg on a map.
   - Install `matplotlib` and `cartopy` through the `conda`
     package manager:
 
-        ~/miniconda3/conda install matplotlib
-        ~/miniconda3/conda install -c conda-forge cartopy
+        ~/miniconda3/bin/conda install matplotlib
+        ~/miniconda3/bin/conda install -c conda-forge cartopy
+
+  - Install `pdfkit` using `pip`:
+
+        ~/minicoda3/bin/pip install pdfkit
 
 
 ### Installation of the WebObs PROC

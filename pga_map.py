@@ -9,7 +9,6 @@ Parses event XML files (ShakeMap) and plots PGAs in mg on a map.
 """
 from __future__ import print_function
 import os
-import shutil
 from glob import glob
 import argparse
 try:
@@ -36,6 +35,7 @@ from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 import cartopy.io.img_tiles as cimgt
 import cartopy.crs as ccrs
 from pyproj import Geod
+import pdfkit
 
 
 class PgaMap(object):
@@ -313,7 +313,6 @@ class PgaMap(object):
 
         outfile = self.basename + '_pga_map_fig.png'
         fig.savefig(outfile, dpi=300, bbox_inches='tight')
-        print('\nMap plot saved to {}'.format(outfile))
 
     def plot_pga_dist(self):
         """Plot PGA as a function of distance."""
@@ -357,7 +356,6 @@ class PgaMap(object):
             ax.scatter(hypo_dist, pga, color='red', edgecolor='k', zorder=99)
         outfile = self.basename + '_pga_dist_fig.png'
         fig.savefig(outfile, dpi=300, bbox_inches='tight')
-        print('\nPGA-dist plot saved to {}'.format(outfile))
 
     def write_html(self):
         """Write the output HTML file."""
@@ -440,6 +438,7 @@ class PgaMap(object):
         html_file = self.basename + '_pga_map.html'
         with open(html_file, 'w') as fp:
             fp.write(html)
+        print('\nHTML report saved to {}'.format(html_file))
 
         # Link CSS file and logos
         script_path = os.path.dirname(os.path.abspath(__file__))
@@ -454,6 +453,14 @@ class PgaMap(object):
             if os.access(logo_link,  os.F_OK):
                 os.remove(logo_link)
             os.symlink(logo, logo_link)
+
+    def write_pdf(self):
+        """Convert HTML file to PDF."""
+        html_file = self.basename + '_pga_map.html'
+        pdf_file = self.basename + '_pga_map.pdf'
+        pdfkit_options = {'dpi': 300, 'margin-bottom': '0cm', 'quiet': ''}
+        pdfkit.from_file(html_file, pdf_file, options=pdfkit_options)
+        print('\nPDF report saved to {}'.format(pdf_file))
 
     def write_attributes(self):
         """Write attributes text file."""
@@ -515,6 +522,7 @@ def main():
     pgamap.plot_map()
     pgamap.plot_pga_dist()
     pgamap.write_html()
+    pgamap.write_pdf()
     pgamap.write_attributes()
     pgamap.make_symlinks()
 
