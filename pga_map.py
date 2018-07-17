@@ -367,7 +367,7 @@ class PgaMap(object):
 
         event = self.event
         html = open('template.html', 'r').read()
-        title = 'Peak Ground Acceleration'
+        title = 'Peak Ground Acceleration &ndash; ' + self.conf['REGION']
         evid = event['id_sc3']
         subtitle = evid + ' &ndash; '
         date = event['time'].strftime('%Y-%m-%d %H:%M:%S')
