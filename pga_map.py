@@ -397,10 +397,12 @@ class PgaMap(object):
         for nr in range(nrows):
             rows += '\n<tr>'
             for nc in range(ncols):
+                placeholder = '%STA{:02d}'.format(nr + nc*nrows)
                 rows += \
-                    '\n  <td class="left">%STA{:02d}</td>'.format(nr + nc*7)
+                    '\n  <td class="left">{}</td>'.format(placeholder)
+                placeholder = '%PGA{:02d}'.format(nr + nc*nrows)
                 rows += \
-                    '\n  <td class="right">%PGA{:02d}</td>'.format(nr + nc*7)
+                    '\n  <td class="right">{}</td>'.format(placeholder)
             rows += '\n</tr>'
         cmp_ids = sorted(cmp_ids, key=lambda x: x.split('.')[1])
         for n, cmp_id in enumerate(cmp_ids):
