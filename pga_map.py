@@ -373,7 +373,8 @@ class PgaMap(object):
         date = event['time'].strftime('%Y-%m-%d %H:%M:%S')
         subtitle += date + ' &ndash; '
         subtitle += 'M {:.1f}'.format(event['mag'])
-        # Event info
+
+        # Event info table
         lat = '{:8.4f}'.format(event['lat']).replace(' ', '&nbsp;')
         lon = '{:8.4f}'.format(event['lon']).replace(' ', '&nbsp;')
         depth = '{:.3f} km'.format(event['depth']).replace(' ', '&nbsp;')
@@ -387,15 +388,20 @@ class PgaMap(object):
             .replace('%LON', lon)\
             .replace('%DEPTH', depth)\
             .replace('%MAG', mag)
-        # PGA info
-        row_template = '''
-          <tr>
-            <td class="left">%STA1</td>
-            <td class="right">%PGA1</td>
-            <td class="left">%STA2</td>
-            <td class="right">%PGA2</td>
-          </tr>'''
+
+        # PGA info table
+        nsta = len(cmp_ids)
+        nrows = 7
+        ncols = int(np.ceil(nsta/nrows))
         rows = ''
+        for nr in range(nrows):
+            rows += '\n<tr>'
+            for nc in range(ncols):
+                rows += \
+                    '\n  <td class="left">%STA{:02d}</td>'.format(nr + nc*7)
+                rows += \
+                    '\n  <td class="right">%PGA{:02d}</td>'.format(nr + nc*7)
+            rows += '\n</tr>'
         cmp_ids = sorted(cmp_ids, key=lambda x: x.split('.')[1])
         for n, cmp_id in enumerate(cmp_ids):
             cmp_attrib = self.attributes[cmp_id]
@@ -406,21 +412,16 @@ class PgaMap(object):
             if stname == pga_max_sta:
                 st_text = '<b>*' + st_text + '</b>'
                 pga_text = '<b>' + pga_text + '</b>'
-            if not n % 2:
-                row = row_template\
-                    .replace('%STA1', st_text)\
-                    .replace('%PGA1', pga_text)
-            else:
-                row = row\
-                    .replace('%STA2', st_text)\
-                    .replace('%PGA2', pga_text)
-                rows += row
-        if not n % 2:
-            row = row\
-                .replace('%STA2', '')\
-                .replace('%PGA2', '')
-            rows += row
+            rows = rows\
+                .replace('%STA{:02d}'.format(n), st_text)\
+                .replace('%PGA{:02d}'.format(n), pga_text)
+        # remove extra rows
+        for nn in range(n+1, nrows*ncols):
+            rows = rows\
+                .replace('%STA{:02d}'.format(nn), '')\
+                .replace('%PGA{:02d}'.format(nn), '')
         html = html.replace('%ROWS', rows)
+
         # Map file
         map_fig_file = self.basename + '_pga_map_fig.png'
         map_fig_file = os.path.basename(map_fig_file)
