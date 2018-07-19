@@ -66,6 +66,7 @@ class PgaMap(object):
         cfg.optionxform = str
         cfg.readfp(conf_fp)
         self.conf = dict(cfg.items('root'))
+        self.conf['soil_conditions'] = False
         self.lon0 = float(self.conf['MAP_XYLIM'].split(',')[0])
         self.lon1 = float(self.conf['MAP_XYLIM'].split(',')[1])
         self.lat0 = float(self.conf['MAP_XYLIM'].split(',')[2])
@@ -98,13 +99,25 @@ class PgaMap(object):
         event['mag'] = float(mag)
         self.event = event
 
-    def parse_event_dat_xml(self, xml_file):
+    def parse_event_dat_xml(self, xml_file, soil_conditions_file=None):
         """
         Parse an event_dat.xml file (input for ShakeMap).
 
         Creates a dictionary of channel attributes:
             lon, lat, pga, pgv, psa03, psa10, psa30
         """
+        soil_conditions = {}
+        soil_cnd_codes = {'soil': 'S', 'rock': 'R', 'NA': 'U'}
+        if soil_conditions_file is not None:
+            self.conf['soil_conditions'] = True
+            for line in open(soil_conditions_file, 'r'):
+                line = line.strip()
+                if not line:
+                    continue
+                if line[0] == '#':
+                    continue
+                station, soil_cnd = line.split()
+                soil_conditions[station] = soil_cnd_codes[soil_cnd]
         xmldoc = minidom.parse(xml_file)
         tag_stationlist = xmldoc.getElementsByTagName('stationlist')
         attributes = dict()
@@ -138,6 +151,11 @@ class PgaMap(object):
                     cmp_attributes['psa03'] = float(psa03)*10.
                     cmp_attributes['psa10'] = float(psa10)*10.
                     cmp_attributes['psa30'] = float(psa30)*10.
+                    try:
+                        soil_cnd = soil_conditions[stname]
+                    except KeyError:
+                        soil_cnd = 'U'
+                    cmp_attributes['soil_cnd'] = soil_cnd
                     attributes[cmp_id] = cmp_attributes
         self.attributes = attributes
 
@@ -300,12 +318,43 @@ class PgaMap(object):
             lon = cmp_attrib['longitude']
             lat = cmp_attrib['latitude']
             pga = cmp_attrib['pga']
-            ax.plot(lon, lat, marker='^', markersize=12,
+            marker = '^'
+            if self.conf['soil_conditions']:
+                soil_cnd = cmp_attrib['soil_cnd']
+                if soil_cnd == 'R':
+                    marker = '^'
+                elif soil_cnd == 'S':
+                    marker = 'o'
+                elif soil_cnd == 'U':
+                    marker = 's'
+            ax.plot(lon, lat, marker=marker, markersize=12,
                     markeredgewidth=1, markeredgecolor='k',
                     color=cmap(norm(pga)),
                     transform=ccrs.Geodetic(), zorder=10)
             stname = cmp_id.split('.')[1]
             self._plot_station_name(lon, lat, stname, ax)
+
+        if self.conf['soil_conditions']:
+            rock_station, = ax.plot(
+                -self.lon0, -self.lat0, marker='^', markersize=8,
+                markeredgewidth=1, markeredgecolor='k',
+                color='white', linewidth=0,
+                transform=ccrs.Geodetic())
+            soil_station, = ax.plot(
+                -self.lon0, -self.lat0, marker='o', markersize=8,
+                markeredgewidth=1, markeredgecolor='k',
+                color='white', linewidth=0,
+                transform=ccrs.Geodetic())
+            unk_station, = ax.plot(
+                -self.lon0, -self.lat0, marker='s', markersize=8,
+                markeredgewidth=1, markeredgecolor='k',
+                color='white', linewidth=0,
+                transform=ccrs.Geodetic())
+            legend = ax.legend(
+                [rock_station, soil_station, unk_station],
+                ['rock', 'soil', 'unknown'],
+            )
+            legend.set_zorder(99)
 
         # Add a colorbar
         ax_divider = make_axes_locatable(ax)
@@ -327,8 +376,6 @@ class PgaMap(object):
         fig, ax = plt.subplots(figsize=(8, 2.5))
         ax.set_xscale('log')
         ax.set_yscale('log')
-        ax.set_xlim(0.5, 500)
-        ax.set_ylim(1e-2, 1e6)
         ax.grid(True, which='both', ls='--', color='#bbbbbb')
         ax.set_xlabel('Hypocentral distance (km)')
         ax.set_ylabel('PGA (mg)')
@@ -348,13 +395,14 @@ class PgaMap(object):
         PGA = 10.**(a*M + b*R - np.log10(R) + c - logPGA_uncertainty)
         b3_uncertainty, = ax.plot(
             R, PGA*1e3, color='#999999', linestyle='--', label='uncertainty')
-        ax.legend(handles=(b3_curve, b3_uncertainty))
+        legend_handles = [b3_curve, b3_uncertainty]
 
         g = Geod(ellps='WGS84')
         evlat = event['lat']
         evlon = event['lon']
         evdepth = event['depth']
         cmp_ids = self._select_stations_pga()
+        min_hypo_dist = 1e10
         for cmp_id in cmp_ids:
             cmp_attrib = self.attributes[cmp_id]
             lon = cmp_attrib['longitude']
@@ -362,8 +410,43 @@ class PgaMap(object):
             _, _, dist = g.inv(lon, lat, evlon, evlat)
             dist /= 1000.
             hypo_dist = (dist**2 + evdepth**2)**0.5
+            if hypo_dist < min_hypo_dist:
+                min_hypo_dist = hypo_dist
             pga = cmp_attrib['pga']
-            ax.scatter(hypo_dist, pga, color='red', edgecolor='k', zorder=99)
+            marker = 'o'
+            if self.conf['soil_conditions']:
+                soil_cnd = cmp_attrib['soil_cnd']
+                if soil_cnd == 'R':
+                    marker = '^'
+                elif soil_cnd == 'S':
+                    marker = 'o'
+                elif soil_cnd == 'U':
+                    marker = 's'
+            ax.scatter(
+                hypo_dist, pga, marker=marker, color='red',
+                edgecolor='k', alpha=0.5, zorder=99
+            )
+        if self.conf['soil_conditions']:
+            rock = ax.scatter(
+                0, 0, marker='^', color='white', edgecolor='k',
+                label='rock'
+            )
+            soil = ax.scatter(
+                0, 0, marker='o', color='white', edgecolor='k',
+                label='soil'
+            )
+            unk = ax.scatter(
+                0, 0, marker='s', color='white', edgecolor='k',
+                label='unknown'
+            )
+            legend_handles += [rock, soil, unk]
+        ax.legend(handles=legend_handles)
+        if min_hypo_dist <= 1:
+            ax.set_xlim(0.5, 500)
+            ax.set_ylim(1e-2, 1e6)
+        else:
+            ax.set_xlim(10, 500)
+            ax.set_ylim(1e-2, 1e4)
         outfile = self.basename + '_pga_dist_fig.png'
         fig.savefig(outfile, dpi=300, bbox_inches='tight')
 
@@ -400,6 +483,11 @@ class PgaMap(object):
             .replace('%MAG', mag)
 
         # PGA info table
+        if self.conf['soil_conditions']:
+            pga_title = 'PGA (mg) (R/S/U: rock/soil/unknown)'
+        else:
+            pga_title = 'PGA (mg)'
+        html = html.replace('%PGA_TITLE', pga_title)
         nsta = len(cmp_ids)
         nrows = 7
         ncols = int(np.ceil(nsta/nrows))
@@ -420,7 +508,11 @@ class PgaMap(object):
             pga = cmp_attrib['pga']
             pga_text = '{:5.1f}'.format(pga).replace(' ', '&nbsp;')
             stname = cmp_id.split('.')[1]
-            st_text = stname + ':'
+            if self.conf['soil_conditions']:
+                soil_cnd = cmp_attrib['soil_cnd']
+                st_text = '{}({}):'.format(stname, soil_cnd)
+            else:
+                st_text = '{}:'.format(stname)
             if stname == pga_max_sta:
                 st_text = '<b>*' + st_text + '</b>'
                 pga_text = '<b>' + pga_text + '</b>'
@@ -518,6 +610,9 @@ def parse_args():
     parser.add_argument('xml_file')
     parser.add_argument('xml_dat_file')
     parser.add_argument('out_dir')
+    parser.add_argument('-s', '--soil_conditions_file', type=str,
+                        default=None,
+                        help='Soil conditions file (default: None)')
     parser.add_argument('-c', '--config', type=str, default='PROC.PGA_MAP',
                         help='Config file name (default: PROC.PGA_MAP)')
     args = parser.parse_args()
@@ -530,7 +625,7 @@ def main():
     pgamap = PgaMap()
     pgamap.parse_config(args.config)
     pgamap.parse_event_xml(args.xml_file)
-    pgamap.parse_event_dat_xml(args.xml_dat_file)
+    pgamap.parse_event_dat_xml(args.xml_dat_file, args.soil_conditions_file)
     pgamap.make_path(args.out_dir)
     pgamap.plot_map()
     pgamap.plot_pga_dist()
