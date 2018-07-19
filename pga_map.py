@@ -262,6 +262,12 @@ class PgaMap(object):
                 continue
             p0 = circle_visible[np.argmax(circle_visible[:, 0])]
             p1 = circle_visible[np.argmax(circle_visible[:, 1])]
+            # check if p1 and p0 are too close
+            if sum(np.abs(p1-p0)) <= 1e-2:
+                p1 = circle_visible[np.argmin(circle_visible[:, 1])]
+            # ignore p1 if it is still too close
+            if sum(np.abs(p1-p0)) <= 1e-1:
+                p1 = None
             ax.plot(circle[:, 0], circle[:, 1],
                     color='#777777', linestyle='--',
                     transform=ccrs.Geodetic())
@@ -274,14 +280,15 @@ class PgaMap(object):
                 path_effects.Stroke(linewidth=0.8, foreground='white'),
                 path_effects.Normal()
             ])
-            t = plt.text(p1[0], p1[1], dist_text, size=6, weight='bold',
-                         verticalalignment='center',
-                         horizontalalignment='left',
-                         transform=ccrs.Geodetic(), zorder=10)
-            t.set_path_effects([
-                path_effects.Stroke(linewidth=0.8, foreground='white'),
-                path_effects.Normal()
-            ])
+            if p1 is not None:
+                t = plt.text(p1[0], p1[1], dist_text, size=6, weight='bold',
+                             verticalalignment='center',
+                             horizontalalignment='left',
+                             transform=ccrs.Geodetic(), zorder=10)
+                t.set_path_effects([
+                    path_effects.Stroke(linewidth=0.8, foreground='white'),
+                    path_effects.Normal()
+                ])
 
         cmap_min = float(self.conf['COLORBAR_PGA_MIN_MAX'].split(',')[0])
         cmap_max = float(self.conf['COLORBAR_PGA_MIN_MAX'].split(',')[1])
