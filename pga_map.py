@@ -339,13 +339,16 @@ class PgaMap(object):
         M = event['mag']
         R = np.logspace(-1, 3, 50)
         PGA = 10.**(a*M + b*R - np.log10(R) + c)
-        b3curve, = ax.plot(
+        b3_curve, = ax.plot(
             R, PGA*1e3, label=r'$B^3$: M {:.1f}'.format(M))
-        for M in range(3, 9):
-            PGA = 10.**(a*M + b*R - np.log10(R) + c)
-            b3curve_other, = ax.plot(
-                R, PGA*1e3, color='#999999', label=r'$B^3$: M 3 to 8')
-        ax.legend(handles=(b3curve, b3curve_other))
+        logPGA_uncertainty = 0.47
+        PGA = 10.**(a*M + b*R - np.log10(R) + c + logPGA_uncertainty)
+        b3_uncertainty, = ax.plot(
+            R, PGA*1e3, color='#999999', linestyle='--', label='uncertainty')
+        PGA = 10.**(a*M + b*R - np.log10(R) + c - logPGA_uncertainty)
+        b3_uncertainty, = ax.plot(
+            R, PGA*1e3, color='#999999', linestyle='--', label='uncertainty')
+        ax.legend(handles=(b3_curve, b3_uncertainty))
 
         g = Geod(ellps='WGS84')
         evlat = event['lat']
