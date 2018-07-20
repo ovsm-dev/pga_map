@@ -243,24 +243,8 @@ class PgaMap(object):
         cmp_ids = sorted(cmp_ids, key=lambda x: x.split('.')[1])
         return cmp_ids
 
-    def plot_map(self):
-        """Plot the PGA map."""
-        # Create a Stamen Terrain instance.
-        stamen_terrain = cimgt.StamenTerrain()
-
-        # Create a GeoAxes in the tile's projection.
-        fig, ax = plt.subplots(1, figsize=(10, 10),
-                               subplot_kw={'projection': stamen_terrain.crs})
-
-        extent = (self.lon0, self.lon1, self.lat0, self.lat1)
-        ax.set_extent(extent)
-
+    def _plot_circles(self, ax):
         geodetic_transform = ccrs.Geodetic()
-
-        ax.add_image(stamen_terrain, 11)
-        # ax.coastlines('10m')
-        ax.gridlines(draw_labels=True, color='#777777', linestyle='--')
-
         g = Geod(ellps='WGS84')
         evlat = self.event['lat']
         evlon = self.event['lon']
@@ -325,6 +309,25 @@ class PgaMap(object):
                     path_effects.Stroke(linewidth=0.8, foreground='white'),
                     path_effects.Normal()
                 ])
+
+    def plot_map(self):
+        """Plot the PGA map."""
+        # Create a Stamen Terrain instance.
+        stamen_terrain = cimgt.StamenTerrain()
+
+        # Create a GeoAxes in the tile's projection.
+        fig, ax = plt.subplots(1, figsize=(10, 10),
+                               subplot_kw={'projection': stamen_terrain.crs})
+
+        extent = (self.lon0, self.lon1, self.lat0, self.lat1)
+        ax.set_extent(extent)
+
+        geodetic_transform = ccrs.Geodetic()
+
+        ax.add_image(stamen_terrain, 11)
+        # ax.coastlines('10m')
+        ax.gridlines(draw_labels=True, color='#777777', linestyle='--')
+        self._plot_circles(ax)
 
         cmap_min = float(self.conf['COLORBAR_PGA_MIN_MAX'].split(',')[0])
         cmap_max = float(self.conf['COLORBAR_PGA_MIN_MAX'].split(',')[1])
