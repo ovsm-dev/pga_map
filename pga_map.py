@@ -51,6 +51,8 @@ class PgaMap(object):
     out_path = None
     fileprefix = None
     basename = None
+    # markers for soil conditions
+    markers = {'R': '^', 'S': 'o', 'U': 's'}
 
     def parse_config(self, config_file):
         """Parse config file."""
@@ -246,12 +248,11 @@ class PgaMap(object):
         extent = (self.lon0, self.lon1, self.lat0, self.lat1)
         ax.set_extent(extent)
 
+        geodetic_transform = ccrs.Geodetic()
+
         ax.add_image(stamen_terrain, 11)
         # ax.coastlines('10m')
         ax.gridlines(draw_labels=True, color='#777777', linestyle='--')
-        # gl = ax.gridlines(draw_labels=True)
-        # gl.xlines = False
-        # gl.ylines = False
 
         g = Geod(ellps='WGS84')
         evlat = self.event['lat']
@@ -267,7 +268,7 @@ class PgaMap(object):
         # evlon = -63.2
         ax.plot(evlon, evlat, marker='*', markersize=12,
                 markeredgewidth=1, markeredgecolor='k',
-                color='green', transform=ccrs.Geodetic(),
+                color='green', transform=geodetic_transform,
                 zorder=10)
         evdepth = self.event['depth']
         for hypo_dist in np.arange(10, 500, 10):
@@ -298,12 +299,12 @@ class PgaMap(object):
                 p1 = None
             ax.plot(circle[:, 0], circle[:, 1],
                     color='#777777', linestyle='--',
-                    transform=ccrs.Geodetic())
+                    transform=geodetic_transform)
             dist_text = '{:d} km'.format(hypo_dist)
             t = plt.text(p0[0], p0[1], dist_text, size=6, weight='bold',
                          verticalalignment='center',
                          horizontalalignment='right',
-                         transform=ccrs.Geodetic(), zorder=10)
+                         transform=geodetic_transform, zorder=10)
             t.set_path_effects([
                 path_effects.Stroke(linewidth=0.8, foreground='white'),
                 path_effects.Normal()
@@ -312,7 +313,7 @@ class PgaMap(object):
                 t = plt.text(p1[0], p1[1], dist_text, size=6, weight='bold',
                              verticalalignment='center',
                              horizontalalignment='left',
-                             transform=ccrs.Geodetic(), zorder=10)
+                             transform=geodetic_transform, zorder=10)
                 t.set_path_effects([
                     path_effects.Stroke(linewidth=0.8, foreground='white'),
                     path_effects.Normal()
@@ -331,35 +332,29 @@ class PgaMap(object):
             marker = '^'
             if self.conf['soil_conditions']:
                 soil_cnd = cmp_attrib['soil_cnd']
-                if soil_cnd == 'R':
-                    marker = '^'
-                elif soil_cnd == 'S':
-                    marker = 'o'
-                elif soil_cnd == 'U':
-                    marker = 's'
+                marker = self.markers[soil_cnd]
             ax.plot(lon, lat, marker=marker, markersize=12,
                     markeredgewidth=1, markeredgecolor='k',
                     color=cmap(norm(pga)),
-                    transform=ccrs.Geodetic(), zorder=10)
+                    transform=geodetic_transform, zorder=10)
             stname = cmp_id.split('.')[1]
             self._plot_station_name(lon, lat, stname, ax)
 
         if self.conf['soil_conditions']:
+            kwargs = {
+                'markersize': 8,
+                'markeredgewidth': 1,
+                'markeredgecolor': 'k',
+                'color': '#cccccc',
+                'linewidth': 0,
+                'transform': geodetic_transform
+            }
             rock_station, = ax.plot(
-                -self.lon0, -self.lat0, marker='^', markersize=8,
-                markeredgewidth=1, markeredgecolor='k',
-                color='#cccccc', linewidth=0,
-                transform=ccrs.Geodetic())
+                -self.lon0, -self.lat0, marker=self.markers['R'], **kwargs)
             soil_station, = ax.plot(
-                -self.lon0, -self.lat0, marker='o', markersize=8,
-                markeredgewidth=1, markeredgecolor='k',
-                color='#cccccc', linewidth=0,
-                transform=ccrs.Geodetic())
+                -self.lon0, -self.lat0, marker=self.markers['S'], **kwargs)
             unk_station, = ax.plot(
-                -self.lon0, -self.lat0, marker='s', markersize=8,
-                markeredgewidth=1, markeredgecolor='k',
-                color='#cccccc', linewidth=0,
-                transform=ccrs.Geodetic())
+                -self.lon0, -self.lat0, marker=self.markers['U'], **kwargs)
             legend = ax.legend(
                 [rock_station, soil_station, unk_station],
                 ['rock', 'soil', 'unknown'],
@@ -380,6 +375,20 @@ class PgaMap(object):
         outfile = self.basename + '_pga_map_fig.png'
         fig.savefig(outfile, dpi=300, bbox_inches='tight')
 
+    def _b3(self, M, R, uncertainty=False):
+        """Compute the B3 law (Beauducel et al., 2011)."""
+        a = 0.61755
+        b = -0.0030746
+        c = -3.3968
+        logPGA_uncertainty = 0.47
+        PGA = 10.**(a*M + b*R - np.log10(R) + c)
+        if uncertainty:
+            PGA_lower = 10.**(a*M + b*R - np.log10(R) + c - logPGA_uncertainty)
+            PGA_upper = 10.**(a*M + b*R - np.log10(R) + c + logPGA_uncertainty)
+            return PGA, PGA_lower, PGA_upper
+        else:
+            return PGA
+
     def plot_pga_dist(self):
         """Plot PGA as a function of distance."""
         event = self.event
@@ -390,21 +399,14 @@ class PgaMap(object):
         ax.set_xlabel('Hypocentral distance (km)')
         ax.set_ylabel('PGA (mg)')
         # plot the b3 law (Beauducel et al., 2011)
-        a = 0.61755
-        b = -0.0030746
-        c = -3.3968
         M = event['mag']
         R = np.logspace(-1, 3, 50)
-        PGA = 10.**(a*M + b*R - np.log10(R) + c)
-        b3_curve, = ax.plot(
-            R, PGA*1e3, label=r'$B^3$: M {:.1f}'.format(M))
-        logPGA_uncertainty = 0.47
-        PGA = 10.**(a*M + b*R - np.log10(R) + c + logPGA_uncertainty)
-        b3_uncertainty, = ax.plot(
-            R, PGA*1e3, color='#999999', linestyle='--', label='uncertainty')
-        PGA = 10.**(a*M + b*R - np.log10(R) + c - logPGA_uncertainty)
-        b3_uncertainty, = ax.plot(
-            R, PGA*1e3, color='#999999', linestyle='--', label='uncertainty')
+        PGA, PGA_lower, PGA_upper = self._b3(M, R, uncertainty=True)
+        b3_curve, = ax.plot(R, PGA*1e3, label=r'$B^3$: M {:.1f}'.format(M))
+        kwargs = {
+            'color': '#999999', 'linestyle': '--', 'label': 'uncertainty'}
+        b3_uncertainty, = ax.plot(R, PGA_lower*1e3, **kwargs)
+        b3_uncertainty, = ax.plot(R, PGA_upper*1e3, **kwargs)
         legend_handles = [b3_curve, b3_uncertainty]
 
         g = Geod(ellps='WGS84')
@@ -431,29 +433,19 @@ class PgaMap(object):
             marker = 'o'
             if self.conf['soil_conditions']:
                 soil_cnd = cmp_attrib['soil_cnd']
-                if soil_cnd == 'R':
-                    marker = '^'
-                elif soil_cnd == 'S':
-                    marker = 'o'
-                elif soil_cnd == 'U':
-                    marker = 's'
+                marker = self.markers[soil_cnd]
             ax.scatter(
                 hypo_dist, pga, marker=marker, color=cmap(norm(pga)),
                 edgecolor='k', alpha=0.5, zorder=99
             )
         if self.conf['soil_conditions']:
+            kwargs = {'color': '#cccccc', 'edgecolor': 'k'}
             rock = ax.scatter(
-                0, 0, marker='^', color='#cccccc', edgecolor='k',
-                label='rock'
-            )
+                0, 0, marker=self.markers['R'], label='rock', **kwargs)
             soil = ax.scatter(
-                0, 0, marker='o', color='#cccccc', edgecolor='k',
-                label='soil'
-            )
+                0, 0, marker=self.markers['S'], label='soil', **kwargs)
             unk = ax.scatter(
-                0, 0, marker='s', color='#cccccc', edgecolor='k',
-                label='unknown'
-            )
+                0, 0, marker=self.markers['U'], label='unknown', **kwargs)
             legend_handles += [rock, soil, unk]
         ax.legend(handles=legend_handles)
         if min_hypo_dist <= 1:
@@ -465,39 +457,13 @@ class PgaMap(object):
         outfile = self.basename + '_pga_dist_fig.png'
         fig.savefig(outfile, dpi=300, bbox_inches='tight')
 
-    def write_html(self):
-        """Write the output HTML file."""
+    def _build_pga_table_html(self, html):
+        """Build the PGA info table for the HTML report."""
         cmp_ids = self._select_stations_pga()
         # find max pga and corresponding station
         pga_list = [(cmp_id.split('.')[1], self.attributes[cmp_id]['pga'])
                     for cmp_id in cmp_ids]
         pga_max_sta, pga_max = max(pga_list, key=lambda x: x[1])
-
-        event = self.event
-        html = open('template.html', 'r').read()
-        title = 'Peak Ground Acceleration &ndash; ' + self.conf['REGION']
-        evid = event['id_sc3']
-        subtitle = evid + ' &ndash; '
-        date = event['time'].strftime('%Y-%m-%d %H:%M:%S')
-        subtitle += date + ' &ndash; '
-        subtitle += 'M {:.1f}'.format(event['mag'])
-
-        # Event info table
-        lat = '{:8.4f}'.format(event['lat']).replace(' ', '&nbsp;')
-        lon = '{:8.4f}'.format(event['lon']).replace(' ', '&nbsp;')
-        depth = '{:.3f} km'.format(event['depth']).replace(' ', '&nbsp;')
-        mag = '{:.2f}'.format(event['mag']).replace(' ', '&nbsp;')
-        html = html\
-            .replace('%TITLE', title)\
-            .replace('%SUBTITLE', subtitle)\
-            .replace('%EVID', evid)\
-            .replace('%DATE', date)\
-            .replace('%LAT', lat)\
-            .replace('%LON', lon)\
-            .replace('%DEPTH', depth)\
-            .replace('%MAG', mag)
-
-        # PGA info table
         if self.conf['soil_conditions']:
             pga_title = 'PGA (mg) (R/S/U: rock/soil/unknown)'
         else:
@@ -540,6 +506,36 @@ class PgaMap(object):
                 .replace('%STA{:02d}'.format(nn), '')\
                 .replace('%PGA{:02d}'.format(nn), '')
         html = html.replace('%ROWS', rows)
+        return html
+
+    def write_html(self):
+        """Write the output HTML file."""
+        event = self.event
+        html = open('template.html', 'r').read()
+        title = 'Peak Ground Acceleration &ndash; ' + self.conf['REGION']
+        evid = event['id_sc3']
+        subtitle = evid + ' &ndash; '
+        date = event['time'].strftime('%Y-%m-%d %H:%M:%S')
+        subtitle += date + ' &ndash; '
+        subtitle += 'M {:.1f}'.format(event['mag'])
+
+        # Event info table
+        lat = '{:8.4f}'.format(event['lat']).replace(' ', '&nbsp;')
+        lon = '{:8.4f}'.format(event['lon']).replace(' ', '&nbsp;')
+        depth = '{:.3f} km'.format(event['depth']).replace(' ', '&nbsp;')
+        mag = '{:.2f}'.format(event['mag']).replace(' ', '&nbsp;')
+        html = html\
+            .replace('%TITLE', title)\
+            .replace('%SUBTITLE', subtitle)\
+            .replace('%EVID', evid)\
+            .replace('%DATE', date)\
+            .replace('%LAT', lat)\
+            .replace('%LON', lon)\
+            .replace('%DEPTH', depth)\
+            .replace('%MAG', mag)
+
+        # PGA info table
+        html = self._build_pga_table_html(html)
 
         # Map file
         map_fig_file = self.basename + '_pga_map_fig.png'
