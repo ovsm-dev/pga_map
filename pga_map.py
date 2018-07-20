@@ -392,10 +392,10 @@ class PgaMap(object):
             }
             rock_station, = ax.plot(
                 -self.lon0, -self.lat0, marker=self.markers['R'],
-                label='soil', **kwargs)
+                label='rock', **kwargs)
             soil_station, = ax.plot(
                 -self.lon0, -self.lat0, marker=self.markers['S'],
-                label='rock', **kwargs)
+                label='soil', **kwargs)
             handles = [rock_station, soil_station]
             if unknown_soils:
                 unk_station, = ax.plot(
