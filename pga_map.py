@@ -366,9 +366,11 @@ class PgaMap(object):
         cax = ax_divider.append_axes('right', size='100%',
                                      pad='-30%', aspect=15.,
                                      map_projection=stamen_terrain.crs)
+        cax.background_patch.set_visible(False)
+        cax.outline_patch.set_visible(False)
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm.set_array([])
-        fig.colorbar(sm, cax=cax)
+        fig.colorbar(sm, extend='max', cax=cax)
         cax.get_yaxis().set_visible(True)
         cax.set_ylabel('PGA (mg)')
 
