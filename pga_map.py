@@ -203,8 +203,18 @@ class PgaMap(object):
     def _colormap(self, vmin, vmax):
         # Normalizing color scale
         norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
-        # YlOrRd colormap
-        cmap = plt.cm.YlOrRd
+        colors = [
+            '#FFE39A',
+            '#FFBE6A',
+            '#FF875F',
+            '#F3484E',
+            '#E6004F',
+            '#BD0064',
+            '#7B0061'
+        ]
+        ncols = int(vmax-vmin)
+        cmap = mpl.colors.LinearSegmentedColormap.from_list(
+            'pga_cmap', colors, ncols)
         return norm, cmap
 
     def _select_stations_pga(self):
@@ -338,17 +348,17 @@ class PgaMap(object):
             rock_station, = ax.plot(
                 -self.lon0, -self.lat0, marker='^', markersize=8,
                 markeredgewidth=1, markeredgecolor='k',
-                color='white', linewidth=0,
+                color='#cccccc', linewidth=0,
                 transform=ccrs.Geodetic())
             soil_station, = ax.plot(
                 -self.lon0, -self.lat0, marker='o', markersize=8,
                 markeredgewidth=1, markeredgecolor='k',
-                color='white', linewidth=0,
+                color='#cccccc', linewidth=0,
                 transform=ccrs.Geodetic())
             unk_station, = ax.plot(
                 -self.lon0, -self.lat0, marker='s', markersize=8,
                 markeredgewidth=1, markeredgecolor='k',
-                color='white', linewidth=0,
+                color='#cccccc', linewidth=0,
                 transform=ccrs.Geodetic())
             legend = ax.legend(
                 [rock_station, soil_station, unk_station],
@@ -401,8 +411,13 @@ class PgaMap(object):
         evlat = event['lat']
         evlon = event['lon']
         evdepth = event['depth']
-        cmp_ids = self._select_stations_pga()
+
+        cmap_min = float(self.conf['COLORBAR_PGA_MIN_MAX'].split(',')[0])
+        cmap_max = float(self.conf['COLORBAR_PGA_MIN_MAX'].split(',')[1])
+        norm, cmap = self._colormap(cmap_min, cmap_max)
+
         min_hypo_dist = 1e10
+        cmp_ids = self._select_stations_pga()
         for cmp_id in cmp_ids:
             cmp_attrib = self.attributes[cmp_id]
             lon = cmp_attrib['longitude']
@@ -423,20 +438,20 @@ class PgaMap(object):
                 elif soil_cnd == 'U':
                     marker = 's'
             ax.scatter(
-                hypo_dist, pga, marker=marker, color='red',
+                hypo_dist, pga, marker=marker, color=cmap(norm(pga)),
                 edgecolor='k', alpha=0.5, zorder=99
             )
         if self.conf['soil_conditions']:
             rock = ax.scatter(
-                0, 0, marker='^', color='white', edgecolor='k',
+                0, 0, marker='^', color='#cccccc', edgecolor='k',
                 label='rock'
             )
             soil = ax.scatter(
-                0, 0, marker='o', color='white', edgecolor='k',
+                0, 0, marker='o', color='#cccccc', edgecolor='k',
                 label='soil'
             )
             unk = ax.scatter(
-                0, 0, marker='s', color='white', edgecolor='k',
+                0, 0, marker='s', color='#cccccc', edgecolor='k',
                 label='unknown'
             )
             legend_handles += [rock, soil, unk]
