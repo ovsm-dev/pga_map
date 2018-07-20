@@ -80,6 +80,10 @@ class PgaMap(object):
             'UR': 'upper right',
         }
         self.legend_loc = legend_locations[self.conf['MAP_LEGEND_LOC']]
+        try:
+            self.colorbar_bcsf = bool(self.conf['COLORBAR_BCSF'])
+        except Exception:
+            self.colorbar_bcsf = False
 
     def parse_event_xml(self, xml_file):
         """Parse an event.xml file (input for ShakeMap)."""
@@ -209,22 +213,48 @@ class PgaMap(object):
             path_effects.Normal()
         ])
 
-    def _colormap(self, vmin, vmax):
-        # Normalizing color scale
-        norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
-        colors = [
-            '#FFE39A',
-            '#FFBE6A',
-            '#FF875F',
-            '#F3484E',
-            '#E6004F',
-            '#BD0064',
-            '#7B0061'
-        ]
-        ncols = int(vmax-vmin)
-        cmap = mpl.colors.LinearSegmentedColormap.from_list(
-            'pga_cmap', colors, ncols)
-        return norm, cmap
+    def _colormap(self):
+        if self.colorbar_bcsf:
+            colors = [
+                '#CCCCCC',
+                '#70FFFF',
+                '#00FF00',
+                '#FCFF00',
+                '#FFA800',
+                '#FF0000',
+                '#C60000',
+                '#850000',
+                '#A7009B',
+                '#18009D'
+            ]
+            cmap = mpl.colors.LinearSegmentedColormap.from_list(
+                'pga_cmap', colors, len(colors))
+            # BCSF bounds (in %g)
+            bounds = np.array(
+                [0.02, 0.07, 0.3, 1.1, 4.7, 8.6, 16, 29, 52, 96, 100])
+            # convert bounds to mg
+            bounds *= 10.
+            norm = mpl.colors.BoundaryNorm(
+                boundaries=bounds, ncolors=len(colors))
+            return norm, cmap, bounds[:-1]
+        else:
+            vmin = float(self.conf['COLORBAR_PGA_MIN_MAX'].split(',')[0])
+            vmax = float(self.conf['COLORBAR_PGA_MIN_MAX'].split(',')[1])
+            # Normalizing color scale
+            norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+            colors = [
+                '#FFE39A',
+                '#FFBE6A',
+                '#FF875F',
+                '#F3484E',
+                '#E6004F',
+                '#BD0064',
+                '#7B0061'
+            ]
+            ncols = int(vmax-vmin)
+            cmap = mpl.colors.LinearSegmentedColormap.from_list(
+                'pga_cmap', colors, ncols)
+            return norm, cmap, None
 
     def _select_stations_pga(self):
         attributes = self.attributes
@@ -329,9 +359,7 @@ class PgaMap(object):
         ax.gridlines(draw_labels=True, color='#777777', linestyle='--')
         self._plot_circles(ax)
 
-        cmap_min = float(self.conf['COLORBAR_PGA_MIN_MAX'].split(',')[0])
-        cmap_max = float(self.conf['COLORBAR_PGA_MIN_MAX'].split(',')[1])
-        norm, cmap = self._colormap(cmap_min, cmap_max)
+        norm, cmap, bounds = self._colormap()
 
         unknown_soils = False
         cmp_ids = self._select_stations_pga()
@@ -386,7 +414,10 @@ class PgaMap(object):
         cax.outline_patch.set_visible(False)
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm.set_array([])
-        fig.colorbar(sm, extend='max', cax=cax)
+        if self.colorbar_bcsf:
+            fig.colorbar(sm, extend='max', ticks=bounds, cax=cax)
+        else:
+            fig.colorbar(sm, extend='max', cax=cax)
         cax.get_yaxis().set_visible(True)
         cax.set_ylabel('PGA (mg)')
 
@@ -432,9 +463,7 @@ class PgaMap(object):
         evlon = event['lon']
         evdepth = event['depth']
 
-        cmap_min = float(self.conf['COLORBAR_PGA_MIN_MAX'].split(',')[0])
-        cmap_max = float(self.conf['COLORBAR_PGA_MIN_MAX'].split(',')[1])
-        norm, cmap = self._colormap(cmap_min, cmap_max)
+        norm, cmap, _ = self._colormap()
 
         min_hypo_dist = 1e10
         unknown_soils = False
