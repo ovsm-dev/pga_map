@@ -57,3 +57,10 @@ MAP_XYLIM|-61.3,-60.75,14.35,14.92
 
 # Map configuration for Guadeloupe
 #MAP_XYLIM|-61.90,-60.95,15.80,16.55
+
+# Map legend location
+#  LL: lower-left
+#  LR: lower-right
+#  UL: upper-left
+#  UR: upper-right
+MAP_LEGEND_LOC|LL

@@ -73,6 +73,13 @@ class PgaMap(object):
         self.lon1 = float(self.conf['MAP_XYLIM'].split(',')[1])
         self.lat0 = float(self.conf['MAP_XYLIM'].split(',')[2])
         self.lat1 = float(self.conf['MAP_XYLIM'].split(',')[3])
+        legend_locations = {
+            'LL': 'lower left',
+            'LR': 'lower right',
+            'UL': 'upper left',
+            'UR': 'upper right',
+        }
+        self.legend_loc = legend_locations[self.conf['MAP_LEGEND_LOC']]
 
     def parse_event_xml(self, xml_file):
         """Parse an event.xml file (input for ShakeMap)."""
@@ -364,7 +371,7 @@ class PgaMap(object):
                     -self.lon0, -self.lat0, marker=self.markers['U'],
                     label='unknown', **kwargs)
                 handles.append(unk_station)
-            legend = ax.legend(handles=handles)
+            legend = ax.legend(handles=handles, loc=self.legend_loc)
             legend.set_zorder(99)
 
         # Add a colorbar
