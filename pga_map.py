@@ -323,6 +323,7 @@ class PgaMap(object):
         cmap_max = float(self.conf['COLORBAR_PGA_MIN_MAX'].split(',')[1])
         norm, cmap = self._colormap(cmap_min, cmap_max)
 
+        unknown_soils = False
         cmp_ids = self._select_stations_pga()
         for n, cmp_id in enumerate(cmp_ids):
             cmp_attrib = self.attributes[cmp_id]
@@ -332,6 +333,8 @@ class PgaMap(object):
             marker = '^'
             if self.conf['soil_conditions']:
                 soil_cnd = cmp_attrib['soil_cnd']
+                if soil_cnd == 'U':
+                    unknown_soils = True
                 marker = self.markers[soil_cnd]
             ax.plot(lon, lat, marker=marker, markersize=12,
                     markeredgewidth=1, markeredgecolor='k',
@@ -350,15 +353,18 @@ class PgaMap(object):
                 'transform': geodetic_transform
             }
             rock_station, = ax.plot(
-                -self.lon0, -self.lat0, marker=self.markers['R'], **kwargs)
+                -self.lon0, -self.lat0, marker=self.markers['R'],
+                label='soil', **kwargs)
             soil_station, = ax.plot(
-                -self.lon0, -self.lat0, marker=self.markers['S'], **kwargs)
-            unk_station, = ax.plot(
-                -self.lon0, -self.lat0, marker=self.markers['U'], **kwargs)
-            legend = ax.legend(
-                [rock_station, soil_station, unk_station],
-                ['rock', 'soil', 'unknown'],
-            )
+                -self.lon0, -self.lat0, marker=self.markers['S'],
+                label='rock', **kwargs)
+            handles = [rock_station, soil_station]
+            if unknown_soils:
+                unk_station, = ax.plot(
+                    -self.lon0, -self.lat0, marker=self.markers['U'],
+                    label='unknown', **kwargs)
+                handles.append(unk_station)
+            legend = ax.legend(handles=handles)
             legend.set_zorder(99)
 
         # Add a colorbar
@@ -421,6 +427,7 @@ class PgaMap(object):
         norm, cmap = self._colormap(cmap_min, cmap_max)
 
         min_hypo_dist = 1e10
+        unknown_soils = False
         cmp_ids = self._select_stations_pga()
         for cmp_id in cmp_ids:
             cmp_attrib = self.attributes[cmp_id]
@@ -435,6 +442,8 @@ class PgaMap(object):
             marker = 'o'
             if self.conf['soil_conditions']:
                 soil_cnd = cmp_attrib['soil_cnd']
+                if soil_cnd == 'U':
+                    unknown_soils = True
                 marker = self.markers[soil_cnd]
             ax.scatter(
                 hypo_dist, pga, marker=marker, color=cmap(norm(pga)),
@@ -446,9 +455,11 @@ class PgaMap(object):
                 0, 0, marker=self.markers['R'], label='rock', **kwargs)
             soil = ax.scatter(
                 0, 0, marker=self.markers['S'], label='soil', **kwargs)
-            unk = ax.scatter(
-                0, 0, marker=self.markers['U'], label='unknown', **kwargs)
-            legend_handles += [rock, soil, unk]
+            legend_handles += [rock, soil]
+            if unknown_soils:
+                unk = ax.scatter(
+                    0, 0, marker=self.markers['U'], label='unknown', **kwargs)
+                legend_handles += [unk]
         ax.legend(handles=legend_handles)
         if min_hypo_dist <= 1:
             ax.set_xlim(0.5, 500)
@@ -467,7 +478,12 @@ class PgaMap(object):
                     for cmp_id in cmp_ids]
         pga_max_sta, pga_max = max(pga_list, key=lambda x: x[1])
         if self.conf['soil_conditions']:
-            pga_title = 'PGA (mg) (R/S/U: rock/soil/unknown)'
+            _soil_cnds = [
+                self.attributes[cmp_id]['soil_cnd'] for cmp_id in cmp_ids]
+            if 'U' in _soil_cnds:
+                pga_title = 'PGA (mg) (R/S/U: rock/soil/unknown)'
+            else:
+                pga_title = 'PGA (mg) (R/S: rock/soil)'
         else:
             pga_title = 'PGA (mg)'
         html = html.replace('%PGA_TITLE', pga_title)
