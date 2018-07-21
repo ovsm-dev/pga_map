@@ -29,11 +29,11 @@ import numpy as np
 import matplotlib as mpl
 mpl.use('agg')  # NOQA
 import matplotlib.pyplot as plt
-import matplotlib.transforms as transforms
 import matplotlib.patheffects as path_effects
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 import cartopy.io.img_tiles as cimgt
 import cartopy.crs as ccrs
+from adjustText import adjust_text
 from pyproj import Geod
 import pdfkit
 
@@ -187,32 +187,6 @@ class PgaMap(object):
         self.fileprefix = '{}_{}'.format(event['timestr'], event['id_sc3'])
         self.basename = os.path.join(self.out_path, self.fileprefix)
 
-    def _plot_station_name(self, lon, lat, stname, ax):
-        geodetic_transform = ccrs.Geodetic()._as_mpl_transform(ax)
-
-        def text_transform(x):
-            return transforms.offset_copy(geodetic_transform, fig=ax.figure,
-                                          units='points', x=x)
-
-        if stname in ['MPLM', 'LAM']:
-            trans = text_transform(12)
-            ha = 'left'
-            if stname == 'LAM':
-                va = 'bottom'
-            else:
-                va = 'center'
-        else:
-            trans = text_transform(-12)
-            ha = 'right'
-            va = 'center'
-        t = plt.text(lon, lat, stname, size=8, weight='bold',
-                     verticalalignment=va, horizontalalignment=ha,
-                     transform=trans, zorder=99)
-        t.set_path_effects([
-            path_effects.Stroke(linewidth=1.5, foreground='white'),
-            path_effects.Normal()
-        ])
-
     def _colormap(self):
         if self.colorbar_bcsf:
             colors = [
@@ -274,7 +248,7 @@ class PgaMap(object):
         return cmp_ids
 
     def _plot_circles(self, ax):
-        geodetic_transform = ccrs.Geodetic()
+        geodetic_transform = ccrs.PlateCarree()
         g = Geod(ellps='WGS84')
         evlat = self.event['lat']
         evlon = self.event['lon']
@@ -342,17 +316,15 @@ class PgaMap(object):
 
     def plot_map(self):
         """Plot the PGA map."""
-        # Create a Stamen Terrain instance.
         stamen_terrain = cimgt.StamenTerrain()
+        geodetic_transform = ccrs.PlateCarree()
 
-        # Create a GeoAxes in the tile's projection.
+        # Create a GeoAxes
         fig, ax = plt.subplots(1, figsize=(10, 10),
-                               subplot_kw={'projection': stamen_terrain.crs})
+                               subplot_kw={'projection': geodetic_transform})
 
         extent = (self.lon0, self.lon1, self.lat0, self.lat1)
         ax.set_extent(extent)
-
-        geodetic_transform = ccrs.Geodetic()
 
         ax.add_image(stamen_terrain, 11)
         # ax.coastlines('10m')
@@ -363,6 +335,8 @@ class PgaMap(object):
 
         unknown_soils = False
         cmp_ids = self._select_stations_pga()
+        texts = []
+        markers = []
         for n, cmp_id in enumerate(cmp_ids):
             cmp_attrib = self.attributes[cmp_id]
             lon = cmp_attrib['longitude']
@@ -374,12 +348,19 @@ class PgaMap(object):
                 if soil_cnd == 'U':
                     unknown_soils = True
                 marker = self.markers[soil_cnd]
-            ax.plot(lon, lat, marker=marker, markersize=12,
-                    markeredgewidth=1, markeredgecolor='k',
-                    color=cmap(norm(pga)),
-                    transform=geodetic_transform, zorder=10)
+            m, = ax.plot(
+                lon, lat, marker=marker, markersize=12,
+                markeredgewidth=1, markeredgecolor='k',
+                color=cmap(norm(pga)),
+                transform=geodetic_transform, zorder=10)
+            markers.append(m)
             stname = cmp_id.split('.')[1]
-            self._plot_station_name(lon, lat, stname, ax)
+            t = ax.text(lon, lat, stname, size=8, weight='bold', zorder=99)
+            t.set_path_effects([
+                path_effects.Stroke(linewidth=1.5, foreground='white'),
+                path_effects.Normal()
+            ])
+            texts.append(t)
 
         if self.conf['soil_conditions']:
             kwargs = {
@@ -420,6 +401,8 @@ class PgaMap(object):
             fig.colorbar(sm, extend='max', cax=cax)
         cax.get_yaxis().set_visible(True)
         cax.set_ylabel('PGA (mg)')
+
+        adjust_text(texts, add_objects=markers)
 
         outfile = self.basename + '_pga_map_fig.png'
         fig.savefig(outfile, dpi=300, bbox_inches='tight')

@@ -16,11 +16,12 @@ Parses event XML files (ShakeMap) and plots PGAs in mg on a map.
     the system `python` executable with the Miniconda one
     (Other WebObs PROCs might use different versions of Python.)
 
-  - Install `matplotlib` and `cartopy` through the `conda`
-    package manager:
+  - Install `matplotlib`, `cartopy` and `adjusttext` through the
+    `conda` package manager:
 
         ~/miniconda3/bin/conda install matplotlib
         ~/miniconda3/bin/conda install -c conda-forge cartopy
+        ~/miniconda3/bin/conda install -c phlya adjusttext
 
   - Install `pdfkit` using `pip`:
 
