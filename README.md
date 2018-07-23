@@ -21,7 +21,7 @@ Parses event XML files (ShakeMap) and plots PGAs in mg on a map.
 
         ~/miniconda3/bin/conda install matplotlib
         ~/miniconda3/bin/conda install -c conda-forge cartopy
-        ~/miniconda3/bin/conda install -c phlya adjusttext
+        ~/miniconda3/bin/conda install -c phlya adjusttext=0.7.2
 
   - Install `pdfkit` using `pip`:
 
