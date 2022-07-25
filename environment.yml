@@ -1,0 +1,12 @@
+name: pga_map
+channels:
+  - conda-forge
+  - defaults
+  - phlya
+dependencies:
+  - python=3.7
+  - numpy=1.14
+  - matplotlib=2.2
+  - cartopy=0.16
+  - pyproj=1.9
+  - adjusttext=0.7.2
