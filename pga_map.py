@@ -614,7 +614,12 @@ class PgaMap(object):
         """Convert HTML file to PDF."""
         html_file = self.basename + '_pga_map.html'
         pdf_file = self.basename + '_pga_map.pdf'
-        pdfkit_options = {'dpi': 300, 'margin-bottom': '0cm', 'quiet': ''}
+        pdfkit_options = {
+            'dpi': 300,
+            'margin-bottom': '0cm',
+            'quiet': '',
+            'enable-local-file-access': None
+        }
         pdfkit.from_file(html_file, pdf_file, options=pdfkit_options)
         print('\nPDF report saved to {}'.format(pdf_file))
 
