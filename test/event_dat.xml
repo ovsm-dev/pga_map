@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!DOCTYPE earthquake SYSTEM "stationlist.dtd">
+<stationlist created="" xmlns="ch.ethz.sed.shakemap.usgs.xml">
+  <station code="GRGR" name="GRGR" netid="CU" source="OVSM" insttype="STS-2" lat="12.1324" lon="-61.654">
+    <comp name="00.BH">
+      <acc value="0.0093189752" flag="0"/>
+      <vel value="0.0031594359" flag="0"/>
+      <psa03 value="0.0125674867" flag="0"/>
+      <psa10 value="0.0011681924" flag="0"/>
+      <psa30 value="0.0001468924" flag="0"/>
+    </comp>
+  </station>
+  <station code="FDF" name="FDF" netid="MQ" source="OVSM" insttype="120" lat="14.7348" lon="-61.1467">
+    <comp name="00.HH">
+      <acc value="0.1502834369" flag="0"/>
+      <vel value="0.0472240702" flag="0"/>
+      <psa03 value="0.2883974112" flag="0"/>
+      <psa10 value="0.0345671227" flag="0"/>
+      <psa30 value="0.0016827454" flag="0"/>
+    </comp>
+  </station>
+  <station code="IA2" name="IA2" netid="MQ" source="OVSM" insttype="PRODUCT" lat="14.8031" lon="-61.2052">
+    <comp name="00.EH">
+      <acc value="0.3480379853" flag="0"/>
+      <vel value="0.1392564087" flag="0"/>
+      <psa03 value="0.6351651854" flag="0"/>
+      <psa10 value="0.0378627780" flag="0"/>
+      <psa30 value="0.0133540783" flag="0"/>
+    </comp>
+  </station>
+  <station code="LAM" name="LAM" netid="MQ" source="OVSM" insttype="CMG-40T" lat="14.8129" lon="-61.1631">
+    <comp name="00.HH">
+      <acc value="0.6556138699" flag="0"/>
+      <vel value="0.1896822521" flag="0"/>
+      <psa03 value="1.3306672907" flag="0"/>
+      <psa10 value="0.0738820107" flag="0"/>
+      <psa30 value="0.0041887190" flag="0"/>
+    </comp>
+  </station>
+  <station code="LPM" name="LPM" netid="MQ" source="OVSM" insttype="Trillium" lat="14.5873" lon="-60.9602">
+    <comp name="00.HH">
+      <acc value="0.5425909363" flag="0"/>
+      <vel value="0.1390224026" flag="0"/>
+      <psa03 value="0.2682900469" flag="0"/>
+      <psa10 value="0.0390684911" flag="0"/>
+      <psa30 value="0.0029766356" flag="0"/>
+    </comp>
+  </station>
+  <station code="MPLM" name="MPLM" netid="MQ" source="OVSM" insttype="Trillium" lat="14.8064" lon="-61.1783">
+    <comp name="00.HH">
+      <acc value="0.4376109058" flag="0"/>
+      <vel value="0.1175436643" flag="0"/>
+      <psa03 value="1.0799691953" flag="0"/>
+      <psa10 value="0.0417431030" flag="0"/>
+      <psa30 value="0.0026913289" flag="0"/>
+    </comp>
+  </station>
+  <station code="MVM" name="MVM" netid="MQ" source="OVSM" insttype="Trillium" lat="14.5545" lon="-60.8955">
+    <comp name="00.HH">
+      <acc value="1.4471382005" flag="0"/>
+      <vel value="0.2176037665" flag="0"/>
+      <psa03 value="0.3258420311" flag="0"/>
+      <psa10 value="0.0346243131" flag="0"/>
+      <psa30 value="0.0026292673" flag="0"/>
+    </comp>
+  </station>
+  <station code="PBO" name="PBO" netid="MQ" source="OVSM" insttype="60" lat="14.8103" lon="-61.1708">
+    <comp name="00.HH">
+      <acc value="0.0418780896" flag="0"/>
+      <vel value="0.0127479134" flag="0"/>
+      <psa03 value="0.0910336385" flag="0"/>
+      <psa10 value="0.0031700042" flag="0"/>
+      <psa30 value="0.0003072523" flag="0"/>
+    </comp>
+  </station>
+  <station code="TRM" name="TRM" netid="MQ" source="OVSM" insttype="Trillium" lat="14.5363" lon="-61.0512">
+    <comp name="00.HH">
+      <acc value="0.1630286755" flag="0"/>
+      <vel value="0.0333058974" flag="0"/>
+      <psa03 value="0.0992204167" flag="0"/>
+      <psa10 value="0.0148780138" flag="0"/>
+      <psa30 value="0.0012316910" flag="0"/>
+    </comp>
+  </station>
+  <station code="ZAM" name="ZAM" netid="MQ" source="OVSM" insttype="Trillium" lat="14.5856" lon="-61.0228">
+    <comp name="00.HH">
+      <acc value="1.3527447414" flag="0"/>
+      <vel value="0.2577905911" flag="0"/>
+      <psa03 value="1.0235463930" flag="0"/>
+      <psa10 value="0.0414430825" flag="0"/>
+      <psa30 value="0.0048061946" flag="0"/>
+    </comp>
+  </station>
+  <station code="DLPL" name="DLPL" netid="TR" source="OVSM" insttype="30" lat="15.3324" lon="-61.2468">
+    <comp name="00.HH">
+      <acc value="0.5892678693" flag="0"/>
+      <vel value="0.0892186672" flag="0"/>
+      <psa03 value="0.2570432762" flag="0"/>
+      <psa10 value="0.0310721640" flag="0"/>
+      <psa30 value="0.0017474235" flag="0"/>
+    </comp>
+  </station>
+  <station code="MCLT" name="MCLT" netid="TR" source="OVSM" insttype="100" lat="13.7096" lon="-60.9412">
+    <comp name="00.HH">
+      <acc value="0.0073828485" flag="0"/>
+      <vel value="0.0016996065" flag="0"/>
+      <psa03 value="0.0116033930" flag="0"/>
+      <psa10 value="0.0006324112" flag="0"/>
+      <psa30 value="0.0000626673" flag="0"/>
+    </comp>
+  </station>
+  <station code="SVB" name="SVB" netid="TR" source="OVSM" insttype="30" lat="13.2745" lon="-61.2504">
+    <comp name="00.HH">
+      <acc value="0.0624247416" flag="0"/>
+      <vel value="0.0226551229" flag="0"/>
+      <psa03 value="0.1130511766" flag="0"/>
+      <psa10 value="0.0059708531" flag="0"/>
+      <psa30 value="0.0005955401" flag="0"/>
+    </comp>
+  </station>
+  <station code="ABD" name="ABD" netid="WI" source="OVSM" insttype="120P," lat="16.4744" lon="-61.4881">
+    <comp name="00.HH">
+      <acc value="0.0202333907" flag="0"/>
+      <vel value="0.0058433410" flag="0"/>
+      <psa03 value="0.0279882778" flag="0"/>
+      <psa10 value="0.0023375643" flag="0"/>
+      <psa30 value="0.0003670586" flag="0"/>
+    </comp>
+  </station>
+  <station code="ANBD" name="ANBD" netid="WI" source="OVSM" insttype="TITAN" lat="17.048" lon="-61.765">
+    <comp name="00.HN">
+      <acc value="0.0024830066" flag="0"/>
+      <vel value="0.0008781663" flag="0"/>
+      <psa03 value="0.0044978653" flag="0"/>
+      <psa10 value="0.0007857438" flag="0"/>
+      <psa30 value="0.0001629466" flag="0"/>
+    </comp>
+  </station>
+  <station code="BIM" name="BIM" netid="WI" source="OVSM" insttype="Trillium" lat="14.518" lon="-61.066">
+    <comp name="00.HH">
+      <acc value="0.4399133316" flag="0"/>
+      <vel value="0.1295515407" flag="0"/>
+      <psa03 value="0.7292256246" flag="0"/>
+      <psa10 value="0.0374574049" flag="0"/>
+      <psa30 value="0.0032163204" flag="0"/>
+    </comp>
+  </station>
+  <station code="CBE" name="CBE" netid="WI" source="OVSM" insttype="120P," lat="16.0678" lon="-61.6106">
+    <comp name="00.HH">
+      <acc value="0.1394713628" flag="0"/>
+      <vel value="0.0698336432" flag="0"/>
+      <psa03 value="0.3294779313" flag="0"/>
+      <psa10 value="0.0197957826" flag="0"/>
+      <psa30 value="0.0018802066" flag="0"/>
+    </comp>
+  </station>
+  <station code="DHS" name="DHS" netid="WI" source="OVSM" insttype="Trillium" lat="16.2727" lon="-61.7651">
+    <comp name="00.HH">
+      <acc value="0.0525904455" flag="0"/>
+      <vel value="0.0255149987" flag="0"/>
+      <psa03 value="0.1809577278" flag="0"/>
+      <psa10 value="0.0082801558" flag="0"/>
+      <psa30 value="0.0008666500" flag="0"/>
+    </comp>
+  </station>
+  <station code="DSD" name="DSD" netid="WI" source="OVSM" insttype="240," lat="16.3128" lon="-61.066">
+    <comp name="00.HH">
+      <acc value="0.0312565876" flag="0"/>
+      <vel value="0.0066187985" flag="0"/>
+      <psa03 value="0.0277599700" flag="0"/>
+      <psa10 value="0.0023270571" flag="0"/>
+      <psa30 value="0.0002090799" flag="0"/>
+    </comp>
+  </station>
+  <station code="GCMP" name="GCMP" netid="WI" source="OVSM" insttype="Trillium" lat="12.486" lon="-61.426">
+    <comp name="00.HH">
+      <acc value="0.0063003979" flag="0"/>
+      <vel value="0.0013266344" flag="0"/>
+      <psa03 value="0.0079352558" flag="0"/>
+      <psa10 value="0.0007699572" flag="0"/>
+      <psa30 value="0.0000783311" flag="0"/>
+    </comp>
+  </station>
+  <station code="ILAM" name="ILAM" netid="WI" source="OVSM" insttype="Trillium" lat="14.7745" lon="-60.8753">
+    <comp name="00.HH">
+      <acc value="0.6298108427" flag="0"/>
+      <vel value="0.1692952189" flag="0"/>
+      <psa03 value="0.6580279748" flag="0"/>
+      <psa10 value="0.0255268543" flag="0"/>
+      <psa30 value="0.0031347059" flag="0"/>
+    </comp>
+  </station>
+  <station code="MPOM" name="MPOM" netid="WI" source="OVSM" insttype="Trillium" lat="14.447" lon="-60.8588">
+    <comp name="00.HH">
+      <acc value="0.1772916967" flag="0"/>
+      <vel value="0.0593956285" flag="0"/>
+      <psa03 value="0.2131068267" flag="0"/>
+      <psa10 value="0.0249636624" flag="0"/>
+      <psa30 value="0.0019701200" flag="0"/>
+    </comp>
+  </station>
+  <station code="SAM" name="SAM" netid="WI" source="OVSM" insttype="Trillium" lat="14.8417" lon="-61.1678">
+    <comp name="00.HH">
+      <acc value="0.6730905541" flag="0"/>
+      <vel value="0.2709721312" flag="0"/>
+      <psa03 value="1.5729378915" flag="0"/>
+      <psa10 value="0.0887164241" flag="0"/>
+      <psa30 value="0.0076270847" flag="0"/>
+    </comp>
+  </station>
+  <station code="SBLM" name="SBLM" netid="WI" source="OVSM" insttype="DC" lat="17.9136" lon="-62.8497">
+    <comp name="00.HN">
+      <acc value="0.0008208265" flag="0"/>
+      <vel value="0.0019288213" flag="0"/>
+      <psa03 value="0.0023912517" flag="0"/>
+      <psa10 value="0.0006780015" flag="0"/>
+      <psa30 value="0.0005761996" flag="0"/>
+    </comp>
+  </station>
+  <station code="SLBI" name="SLBI" netid="WI" source="OVSM" insttype="Trillium" lat="14.023" lon="-60.974">
+    <comp name="00.HH">
+      <acc value="0.0683554385" flag="0"/>
+      <vel value="0.0123569165" flag="0"/>
+      <psa03 value="0.0816037225" flag="0"/>
+      <psa10 value="0.0048567663" flag="0"/>
+      <psa30 value="0.0003978963" flag="0"/>
+    </comp>
+  </station>
+  <station code="TDBA" name="TDBA" netid="WI" source="OVSM" insttype="120P," lat="15.855" lon="-61.6354">
+    <comp name="00.HH">
+      <acc value="16.0297532865" flag="0"/>
+      <vel value="3.5736391854" flag="0"/>
+      <psa03 value="10.9687997615" flag="0"/>
+      <psa10 value="1.6753267346" flag="0"/>
+      <psa30 value="0.7872915119" flag="0"/>
+    </comp>
+  </station>
+</stationlist>

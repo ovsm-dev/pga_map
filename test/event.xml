@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!DOCTYPE earthquake SYSTEM "earthquake.dtd">
+<earthquake id="20161202221159" lat="14.9677" lon="-60.4729" depth="48.9441" mag="4.66589" year="2016" month="12" day="2" hour="22" minute="11" second="59" timezone="GMT" locstring="ovsm2016xroz / 14.9677456 / -60.47293881" created="1480719062"/>
