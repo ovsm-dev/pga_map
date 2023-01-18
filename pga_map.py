@@ -66,7 +66,7 @@ class PgaMap(object):
         cfg = ConfigParser()
         # Keep variable names in capital letters
         cfg.optionxform = str
-        cfg.readfp(conf_fp)
+        cfg.read_file(conf_fp)
         self.conf = dict(cfg.items('root'))
         self.conf['soil_conditions'] = False
         self.lon0 = float(self.conf['MAP_XYLIM'].split(',')[0])
