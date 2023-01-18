@@ -12,7 +12,7 @@ Parses event XML files (ShakeMap) and plots PGAs in mg on a map.
   [conda.io/miniconda.html](https://conda.io/miniconda.html).
 
 - Run the installer. You might want to answer "no" to the
-  request of updating your `.bashrc`, to avoid ovverriding
+  request of updating your `.bashrc`, to avoid overriding
   the system `python` executable with the Miniconda one
   (Other WebObs PROCs might use different versions of Python.)
 
@@ -20,9 +20,22 @@ Parses event XML files (ShakeMap) and plots PGAs in mg on a map.
 
       ~/miniconda3/bin/conda env create -f environment.yml
 
+  ⚠️ Do not activate the environment! It is not necessary if you
+  follow the instructions below and it prevents possible collisions with other
+  Python packages that could be used by WebObs.
+
 - Install `pdfkit` using `pip`:
 
       ~/minicoda3/envs/pga_map/bin/pip install pdfkit
+
+  Note that `pdfkit` needs the `wkhtmltopdf` executable, which should be
+  installed through your package manager. Examples:
+
+      # Linux
+      sudo apt install wkhtmltopdf
+
+      # macOS
+      brew install wkhtmltopdf
 
 ## Testing the Python code
 
