@@ -9,6 +9,7 @@ Parses event XML files (ShakeMap) and plots PGAs in mg on a map.
 """
 from __future__ import print_function
 import os
+script_path = os.path.dirname(os.path.realpath(__file__))
 from glob import glob
 import argparse
 try:
@@ -551,7 +552,8 @@ class PgaMap(object):
     def write_html(self):
         """Write the output HTML file."""
         event = self.event
-        html = open('template.html', 'r').read()
+        template_html = os.path.join(script_path, 'template.html')
+        html = open(template_html, 'r').read()
         title = 'Peak Ground Acceleration &ndash; ' + self.conf['REGION']
         evid = event['id_sc3']
         subtitle = evid + ' &ndash; '
@@ -597,7 +599,6 @@ class PgaMap(object):
         print('\nHTML report saved to {}'.format(html_file))
 
         # Link CSS file and logos
-        script_path = os.path.dirname(os.path.abspath(__file__))
         styles_orig = os.path.join(script_path, 'styles.css')
         styles_link = os.path.join(self.out_path, 'styles.css')
         if os.access(styles_link,  os.F_OK):
