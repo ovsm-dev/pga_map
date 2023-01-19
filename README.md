@@ -66,7 +66,7 @@ Note: if you get an error like this one (generally on macOS):
 
 reinstall `shapely` via `pip`:
 
-    pip uninstall shapely && pip install --no-binary :all: shapely
+    ~/minicoda3/envs/pga_map/bin/pip install --no-binary :all: shapely==1.8.5
 
 ### Installation of the WebObs PROC
 
