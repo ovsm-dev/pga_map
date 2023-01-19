@@ -57,7 +57,7 @@ class PgaMap(object):
     # markers for soil conditions
     markers = {'R': '^', 'S': 'o', 'U': 's'}
 
-    def parse_config(self, config_file):
+    def parse_config(self, config_file, wo_root_code):
         """Parse config file."""
         # Transform initial "=" sign to "#" (comment),
         # then all "|" signs to "="
@@ -103,12 +103,12 @@ class PgaMap(object):
             self.copyright2 = None
         try:
             self.logo_file = self.conf['LOGO_FILE']
-            self.logo_file.replace('$WEBOBS{ROOT_CODE}', self.wo_root_code)
+            self.logo_file.replace('$WEBOBS{ROOT_CODE}', wo_root_code)
         except KeyError:
             self.logo_file = None
         try:
             self.logo2_file = self.conf['LOGO2_FILE']
-            self.logo2_file.replace('$WEBOBS{ROOT_CODE}', self.wo_root_code)
+            self.logo2_file.replace('$WEBOBS{ROOT_CODE}', wo_root_code)
         except KeyError:
             self.logo2_file = None
 
@@ -759,7 +759,7 @@ def main():
     """Run the main code."""
     args = parse_args()
     pgamap = PgaMap()
-    pgamap.parse_config(args.config)
+    pgamap.parse_config(args.config, args.wo_root_code)
     pgamap.parse_event_xml(args.xml_file)
     pgamap.parse_event_dat_xml(args.xml_dat_file, args.soil_conditions_file)
     pgamap.make_path(args.out_dir)
