@@ -38,6 +38,7 @@ from adjustText import adjust_text
 from pyproj import Geod
 import pdfkit
 from pdf2image import convert_from_path
+import re
 
 
 class PgaMap(object):
@@ -86,6 +87,12 @@ class PgaMap(object):
             self.colorbar_bcsf = bool(self.conf['COLORBAR_BCSF'])
         except Exception:
             self.colorbar_bcsf = False
+        try:
+            debug = self.conf['DEBUG']
+            self.debug = re.search(
+                '^(Y|YES|OK|ON|1)$', debug, re.IGNORECASE) is not None
+        except KeyError:
+            self.debug = False
 
     def parse_event_xml(self, xml_file):
         """Parse an event.xml file (input for ShakeMap)."""
@@ -597,7 +604,8 @@ class PgaMap(object):
         html_file = self.basename + '_pga_map.html'
         with open(html_file, 'w') as fp:
             fp.write(html)
-        print('\nHTML report saved to {}'.format(html_file))
+        if self.debug:
+            print('\nHTML report saved to {}'.format(html_file))
 
         # Link CSS file and logos
         styles_orig = os.path.join(script_path, 'styles.css')
@@ -667,6 +675,7 @@ class PgaMap(object):
 
     def make_symlinks(self):
         """Create symbolic links."""
+        cwd = os.getcwd()
         os.chdir(self.out_path)
         for ext in ['txt', 'jpg', 'png', 'pdf']:
             filename = self.fileprefix + '_pga_map.' + ext
@@ -675,6 +684,25 @@ class PgaMap(object):
             if os.access('pga_map.' + ext,  os.F_OK):
                 os.remove('pga_map.' + ext)
             os.symlink(filename, 'pga_map.' + ext)
+        os.chdir(cwd)
+
+    def clean_intermediate_files(self):
+        if self.debug:
+            return
+        html_file = self.basename + '_pga_map.html'
+        os.remove(html_file)
+        map_fig_file = self.basename + '_pga_map_fig.png'
+        os.remove(map_fig_file)
+        pga_dist_fig_file = self.basename + '_pga_dist_fig.png'
+        os.remove(pga_dist_fig_file)
+        styles_link = os.path.join(self.out_path, 'styles.css')
+        if os.access(styles_link,  os.F_OK):
+            os.remove(styles_link)
+        logos = os.path.join(script_path, 'logos', '*.png')
+        for logo in glob(logos):
+            logo_link = os.path.join(self.out_path, os.path.basename(logo))
+            if os.access(logo_link,  os.F_OK):
+                os.remove(logo_link)
 
 
 def parse_args():
@@ -709,6 +737,7 @@ def main():
     pgamap.write_images(args.thumbnail_height)
     pgamap.write_attributes()
     pgamap.make_symlinks()
+    pgamap.clean_intermediate_files()
 
 
 if __name__ == '__main__':

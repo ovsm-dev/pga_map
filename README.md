@@ -61,20 +61,14 @@ You should get the following files in the `test` directory:
     │   └── 12
     │       └── 02
     │           └── ovsm2016xroz
-    │               ├── 20161202T221159_ovsm2016xroz_pga_dist_fig.png
-    │               ├── 20161202T221159_ovsm2016xroz_pga_map.html
     │               ├── 20161202T221159_ovsm2016xroz_pga_map.jpg
     │               ├── 20161202T221159_ovsm2016xroz_pga_map.pdf
     │               ├── 20161202T221159_ovsm2016xroz_pga_map.png
     │               ├── 20161202T221159_ovsm2016xroz_pga_map.txt
-    │               ├── 20161202T221159_ovsm2016xroz_pga_map_fig.png
-    │               ├── OVS_logo.png
-    │               ├── RAP_logo.png
     │               ├── pga_map.jpg
     │               ├── pga_map.pdf
     │               ├── pga_map.png
-    │               ├── pga_map.txt
-    │               └── styles.css
+    │               └── pga_map.txt 
 
 Note: if you get an error like this one (generally on macOS):
 
