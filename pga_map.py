@@ -343,7 +343,7 @@ class PgaMap(object):
 
     def plot_map(self):
         """Plot the PGA map."""
-        stamen_terrain = cimgt.StamenTerrain()
+        stamen_terrain = cimgt.Stamen('terrain-background')
         geodetic_transform = ccrs.PlateCarree()
 
         # Create a GeoAxes
