@@ -37,6 +37,18 @@ Parses event XML files (ShakeMap) and plots PGAs in mg on a map.
       # macOS
       brew install wkhtmltopdf
 
+- Check whether `poppler` is installed in your system:
+
+      which poppler
+
+  If not, please install it. Examples:
+
+      # Linux
+      sudo apt install poppler-utils
+
+      # macOS
+      brew install poppler
+
 ## Testing the Python code
 
 Run the test:
@@ -51,12 +63,16 @@ You should get the following files in the `test` directory:
     │           └── ovsm2016xroz
     │               ├── 20161202T221159_ovsm2016xroz_pga_dist_fig.png
     │               ├── 20161202T221159_ovsm2016xroz_pga_map.html
+    │               ├── 20161202T221159_ovsm2016xroz_pga_map.jpg
     │               ├── 20161202T221159_ovsm2016xroz_pga_map.pdf
+    │               ├── 20161202T221159_ovsm2016xroz_pga_map.png
     │               ├── 20161202T221159_ovsm2016xroz_pga_map.txt
     │               ├── 20161202T221159_ovsm2016xroz_pga_map_fig.png
     │               ├── OVS_logo.png
     │               ├── RAP_logo.png
+    │               ├── pga_map.jpg
     │               ├── pga_map.pdf
+    │               ├── pga_map.png
     │               ├── pga_map.txt
     │               └── styles.css
 

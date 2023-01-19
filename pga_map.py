@@ -37,6 +37,7 @@ import cartopy.crs as ccrs
 from adjustText import adjust_text
 from pyproj import Geod
 import pdfkit
+from pdf2image import convert_from_path
 
 
 class PgaMap(object):
@@ -624,6 +625,22 @@ class PgaMap(object):
         pdfkit.from_file(html_file, pdf_file, options=pdfkit_options)
         print('\nPDF report saved to {}'.format(pdf_file))
 
+    def write_images(self):
+        """Convert PDF file to full size PNG and generate a JPEG thumbnail."""
+        pdf_file = self.basename + '_pga_map.pdf'
+        png_file = self.basename + '_pga_map.png'
+        thumb_file = self.basename + '_pga_map.jpg'
+        page = convert_from_path(pdf_file, dpi=300)[0]
+        page.save(png_file, 'PNG')
+        print('\nPNG report saved to {}'.format(png_file))
+        thumb_width = 200
+        size = page.size
+        ratio = thumb_width/size[0]
+        thumb_height = int(size[1]*ratio)
+        page_thumb = page.resize((thumb_width, thumb_height))
+        page_thumb.save(thumb_file, 'JPEG')
+        print('\nThumbnail saved to {}'.format(thumb_file))
+
     def write_attributes(self):
         """Write attributes text file."""
         event = self.event
@@ -688,6 +705,7 @@ def main():
     pgamap.plot_pga_dist()
     pgamap.write_html()
     pgamap.write_pdf()
+    pgamap.write_images()
     pgamap.write_attributes()
     pgamap.make_symlinks()
 
