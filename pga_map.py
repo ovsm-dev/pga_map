@@ -93,6 +93,24 @@ class PgaMap(object):
                 '^(Y|YES|OK|ON|1)$', debug, re.IGNORECASE) is not None
         except KeyError:
             self.debug = False
+        try:
+            self.copyright = self.conf['COPYRIGHT']
+        except KeyError:
+            self.copyright = '(c) OVS-IPGP'
+        try:
+            self.copyright2 = self.conf['COPYRIGHT2']
+        except KeyError:
+            self.copyright2 = None
+        try:
+            self.logo_file = self.conf['LOGO_FILE']
+            self.logo_file.replace('$WEBOBS{ROOT_CODE}', self.wo_root_code)
+        except KeyError:
+            self.logo_file = None
+        try:
+            self.logo2_file = self.conf['LOGO2_FILE']
+            self.logo2_file.replace('$WEBOBS{ROOT_CODE}', self.wo_root_code)
+        except KeyError:
+            self.logo2_file = None
 
     def parse_event_xml(self, xml_file):
         """Parse an event.xml file (input for ShakeMap)."""
@@ -596,8 +614,13 @@ class PgaMap(object):
         pga_dist_fig_file = os.path.basename(pga_dist_fig_file)
         html = html.replace('%PGA_DIST', pga_dist_fig_file)
         # Footer
-        datestr = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        footer_text = '(c) OVS-IPGP ' + datestr
+        footers = []
+        if self.copyright:
+            footers.append(self.copyright)
+        if self.copyright2:
+            footers.append(self.copyright2)
+        footers.append(datetime.now().strftime(' %Y-%m-%d %H:%M:%S'))
+        footer_text = '; '.join(footers)
         html = html.replace('%FOOTER_TEXT', footer_text)
 
         # Write HTML file
@@ -613,12 +636,16 @@ class PgaMap(object):
         if os.access(styles_link,  os.F_OK):
             os.remove(styles_link)
         os.symlink(styles_orig, styles_link)
-        logos = os.path.join(script_path, 'logos', '*.png')
-        for logo in glob(logos):
-            logo_link = os.path.join(self.out_path, os.path.basename(logo))
+        if self.logo_file:
+            logo_link = os.path.join(self.out_path, 'logo_file.png')
             if os.access(logo_link,  os.F_OK):
                 os.remove(logo_link)
-            os.symlink(logo, logo_link)
+            os.symlink(self.logo_file, logo_link)
+        if self.logo2_file:
+            logo_link = os.path.join(self.out_path, 'logo2_file.png')
+            if os.access(logo_link,  os.F_OK):
+                os.remove(logo_link)
+            os.symlink(self.logo2_file, logo_link)
 
     def write_pdf(self):
         """Convert HTML file to PDF."""
@@ -687,6 +714,7 @@ class PgaMap(object):
         os.chdir(cwd)
 
     def clean_intermediate_files(self):
+        """Remove intermediate files, except in DEBUG mode."""
         if self.debug:
             return
         html_file = self.basename + '_pga_map.html'
@@ -714,10 +742,15 @@ def parse_args():
     parser.add_argument('-s', '--soil_conditions_file', type=str,
                         default=None,
                         help='Soil conditions file (default: None)')
-    parser.add_argument('-c', '--config', type=str, default='PROC.PGA_MAP',
+    parser.add_argument('-c', '--config', type=str,
+                        default='PROC.PGA_MAP',
                         help='Config file name (default: PROC.PGA_MAP)')
-    parser.add_argument('-t', '--thumbnail_height', type=int, default=200,
+    parser.add_argument('-t', '--thumbnail_height', type=int,
+                        default=200,
                         help='Thumbnails height (default: 200)')
+    parser.add_argument('-w', '--wo_root_code', type=str,
+                        default='/opt/webobs/CODE',
+                        help='WebObs ROOT_CODE (default: /opt/webobs/CODE)')
     args = parser.parse_args()
     return args
 

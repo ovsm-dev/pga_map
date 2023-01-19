@@ -56,7 +56,7 @@ do
 	if [ -s ${evt_file} ] && [ -s ${dat_file} ]
 	then
 		echo "  --- working on $(dirname ${updated_files[k]}) ---"
-		${WO__PYTHON_PRGM} ${WO__ROOT_CODE}/python/pga_map.py ${evt_file} ${dat_file} ${outROOT} -c ${WO__PATH_PROCS}/${PROC}/${PROC}.conf -t ${WO__MKGRAPH_THUMBNAIL_HEIGHT}
+		${WO__PYTHON_PRGM} ${WO__ROOT_CODE}/python/pga_map.py ${evt_file} ${dat_file} ${outROOT} -c ${WO__PATH_PROCS}/${PROC}/${PROC}.conf -t ${WO__MKGRAPH_THUMBNAIL_HEIGHT} -w ${WO__ROOT_CODE}
 		echo "  --- $(echo $k | awk '{print $0+1}') / ${#updated_files[*]} finished ---"
 
 	else
