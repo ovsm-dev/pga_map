@@ -625,7 +625,7 @@ class PgaMap(object):
         pdfkit.from_file(html_file, pdf_file, options=pdfkit_options)
         print('\nPDF report saved to {}'.format(pdf_file))
 
-    def write_images(self):
+    def write_images(self, thumb_height):
         """Convert PDF file to full size PNG and generate a JPEG thumbnail."""
         pdf_file = self.basename + '_pga_map.pdf'
         png_file = self.basename + '_pga_map.png'
@@ -633,10 +633,9 @@ class PgaMap(object):
         page = convert_from_path(pdf_file, dpi=300)[0]
         page.save(png_file, 'PNG')
         print('\nPNG report saved to {}'.format(png_file))
-        thumb_width = 200
         size = page.size
-        ratio = thumb_width/size[0]
-        thumb_height = int(size[1]*ratio)
+        ratio = thumb_height/size[1]
+        thumb_width = int(size[0]*ratio)
         page_thumb = page.resize((thumb_width, thumb_height))
         page_thumb.save(thumb_file, 'JPEG')
         print('\nThumbnail saved to {}'.format(thumb_file))
@@ -689,6 +688,8 @@ def parse_args():
                         help='Soil conditions file (default: None)')
     parser.add_argument('-c', '--config', type=str, default='PROC.PGA_MAP',
                         help='Config file name (default: PROC.PGA_MAP)')
+    parser.add_argument('-t', '--thumbnail_height', type=int, default=200,
+                        help='Thumbnails height (default: 200)')
     args = parser.parse_args()
     return args
 
@@ -705,7 +706,7 @@ def main():
     pgamap.plot_pga_dist()
     pgamap.write_html()
     pgamap.write_pdf()
-    pgamap.write_images()
+    pgamap.write_images(args.thumbnail_height)
     pgamap.write_attributes()
     pgamap.make_symlinks()
 
