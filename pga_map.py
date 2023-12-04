@@ -21,14 +21,33 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as path_effects
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
-import cartopy.io.img_tiles as cimgt
 import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+from cartopy.io.img_tiles import GoogleWTS
 from adjustText import adjust_text
 from pyproj import Geod
 import pdfkit
 from pdf2image import convert_from_path
 mpl.use('agg')  # NOQA
 script_path = os.path.dirname(os.path.realpath(__file__))
+
+
+class StamenTerrain(GoogleWTS):
+    """
+    Retrieves Stamen Terrain tiles from stadiamaps.com.
+    """
+    def __init__(self,
+                 apikey,
+                 cache=False):
+        super().__init__(cache=cache, desired_tile_form="RGBA")
+        self.apikey = apikey
+
+    def _image_url(self, tile):
+        x, y, z = tile
+        return (
+            'http://tiles.stadiamaps.com/tiles/stamen_terrain_background/'
+            f'{z}/{x}/{y}.png?api_key={self.apikey}'
+        )
 
 
 class PgaMap(object):
@@ -345,18 +364,21 @@ class PgaMap(object):
 
     def plot_map(self):
         """Plot the PGA map."""
-        stamen_terrain = cimgt.Stamen('terrain-background')
+        stamen_terrain = StamenTerrain(self.conf['STADIA_MAPS_API_KEY'])
         geodetic_transform = ccrs.PlateCarree()
 
         # Create a GeoAxes
-        fig, ax = plt.subplots(1, figsize=(10, 10),
-                               subplot_kw={'projection': geodetic_transform})
+        fig, ax = plt.subplots(
+            1, figsize=(10, 10),
+            subplot_kw={'projection': geodetic_transform})
 
         extent = (self.lon0, self.lon1, self.lat0, self.lat1)
         ax.set_extent(extent)
 
         ax.add_image(stamen_terrain, 11)
         # ax.coastlines('10m')
+        # coast = cfeature.GSHHSFeature(scale='f')
+        # ax.add_feature(coast)
         ax.gridlines(draw_labels=True, color='#777777', linestyle='--')
         self._plot_circles(ax)
 
@@ -396,10 +418,7 @@ class PgaMap(object):
         # Add a colorbar
         ax_divider = make_axes_locatable(ax)
         cax = ax_divider.append_axes(
-            'right', size='100%', pad='-30%', aspect=15.,
-            map_projection=stamen_terrain.crs)
-        cax.background_patch.set_visible(False)
-        cax.outline_patch.set_visible(False)
+            'right', size='6%', pad='15%', axes_class=plt.Axes)
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm.set_array([])
         if self.colorbar_bcsf:
@@ -409,10 +428,37 @@ class PgaMap(object):
         cax.get_yaxis().set_visible(True)
         cax.set_ylabel('PGA (mg)')
 
-        adjust_text(texts, add_objects=markers)
+        self._adjust_text_labels(texts, markers, ax)
 
         outfile = f'{self.basename}_pga_map_fig.png'
         fig.savefig(outfile, dpi=300, bbox_inches='tight')
+
+    def _adjust_text_labels(self, station_texts, markers, ax):
+        """
+        Adjust the text labels so that they do not overlap.
+        """
+        if not station_texts:
+            return
+        # store original text positions and texts
+        text_pos = [(t.get_position(), t.get_text()) for t in station_texts]
+        # compute mean position
+        x_pos_mean = np.mean([p[0][0] for p in text_pos])
+        y_pos_mean = np.mean([p[0][1] for p in text_pos])
+        # first adjust text labels relatively to each other
+        adjust_text(station_texts, ax=ax, maxshift=1e3)
+        # then, try to stay away from markers
+        adjust_text(station_texts, add_objects=markers, ax=ax, maxshift=1e3)
+        # check if some text labels are too far away from the mean position
+        # (i.e., bug in adjust_text) and move them back to their original
+        # position
+        for t in station_texts:
+            txt = t.get_text()
+            x_pos, y_pos = t.get_position()
+            delta_x = np.abs(x_pos - x_pos_mean)
+            delta_y = np.abs(y_pos - y_pos_mean)
+            if delta_x > 100 or delta_y > 100:
+                x_pos, y_pos = [tp[0] for tp in text_pos if tp[1] == txt][0]
+                t.set_position((x_pos, y_pos))
 
     def _plot_soil_conditions(self, geodetic_transform, ax, unknown_soils):
         kwargs = {

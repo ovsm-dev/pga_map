@@ -24,12 +24,8 @@ Parses event XML files (ShakeMap) and plots PGAs in mg on a map.
   follow the instructions below and it prevents possible collisions with other
   Python packages that could be used by WebObs.
 
-- Install `pdfkit` using `pip`:
-
-      ~/minicoda3/envs/pga_map/bin/pip install pdfkit
-
-  Note that `pdfkit` needs the `wkhtmltopdf` executable, which should be
-  installed through your package manager. Examples:
+  Note that `pga_map` uses `pdfkit` which, in turns, needs the `wkhtmltopdf`
+  executable. This should be installed through your package manager. Examples:
 
       # Linux
       sudo apt install wkhtmltopdf
@@ -68,9 +64,14 @@ You should get the following files in the `test` directory:
     │               ├── pga_map.jpg
     │               ├── pga_map.pdf
     │               ├── pga_map.png
-    │               └── pga_map.txt 
+    │               └── pga_map.txt
 
-Note: if you get an error like this one (generally on macOS):
+Note that the produced map will have missing and/or watermarked tiles.
+To enable the full map, you need to provide a valid Stadia Maps API key in
+the configuration file (`PROC.PGA_MAP`). You can get a free API key at
+[stadiamaps.com](https://stadiamaps.com).
+
+If you get an error like the following one (generally on macOS):
 
     OSError: Could not find lib c or load any of its variants [].
 
