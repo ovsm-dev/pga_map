@@ -3,32 +3,21 @@
 """
 Parses event XML files (ShakeMap) and plots PGAs in mg on a map.
 
-(c) 2017-2018 - Claudio Satriano <satriano@ipgp.fr>
+(c) 2017-2023 - Claudio Satriano <satriano@ipgp.fr>
                 Félix Léger <leger@ipgp.fr>
                 Jean-Marie Saurel <saurel@ipgp.fr>
 """
-from __future__ import print_function
 import os
-script_path = os.path.dirname(os.path.realpath(__file__))
 from glob import glob
 import argparse
-try:
-    # Python2
-    from ConfigParser import ConfigParser
-except ModuleNotFoundError:
-    # Python3
-    from configparser import ConfigParser
-try:
-    # Python2
-    from StringIO import StringIO
-except ModuleNotFoundError:
-    # Python3
-    from io import StringIO
+import contextlib
+from configparser import ConfigParser
+from io import StringIO
 from xml.dom import minidom
 from datetime import datetime
+import re
 import numpy as np
 import matplotlib as mpl
-mpl.use('agg')  # NOQA
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as path_effects
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
@@ -38,31 +27,42 @@ from adjustText import adjust_text
 from pyproj import Geod
 import pdfkit
 from pdf2image import convert_from_path
-import re
+mpl.use('agg')  # NOQA
+script_path = os.path.dirname(os.path.realpath(__file__))
 
 
 class PgaMap(object):
     """Class for creating a PGA map report."""
 
-    conf = None
-    lon0 = None
-    lon1 = None
-    lat0 = None
-    lat1 = None
-    event = None
-    attributes = None
-    out_path = None
-    fileprefix = None
-    basename = None
-    # markers for soil conditions
-    markers = {'R': '^', 'S': 'o', 'U': 's'}
+    def __init__(self):
+        """Initialize."""
+        self.conf = None
+        self.lon0 = None
+        self.lon1 = None
+        self.lat0 = None
+        self.lat1 = None
+        self.event = None
+        self.attributes = None
+        self.out_path = None
+        self.fileprefix = None
+        self.basename = None
+        # markers for soil conditions
+        self.markers = {'R': '^', 'S': 'o', 'U': 's'}
+        self.legend_loc = None
+        self.colorbar_bcsf = None
+        self.debug = None
+        self.copyright = None
+        self.copyright2 = None
+        self.logo_file = None
+        self.logo2_file = None
 
     def parse_config(self, config_file, wo_root_code):
         """Parse config file."""
         # Transform initial "=" sign to "#" (comment),
         # then all "|" signs to "="
         conf_str =\
-            open(config_file, 'r').read().replace('=', '#').replace('|', '=')
+            open(config_file, 'r', encoding='utf8').read()\
+            .replace('=', '#').replace('|', '=')
         # Prepend a [root] namespace for ConfigParser compatibility
         conf_str = '[root]\n' + conf_str
         conf_fp = StringIO(conf_str)
@@ -114,15 +114,16 @@ class PgaMap(object):
 
     def parse_event_xml(self, xml_file):
         """Parse an event.xml file (input for ShakeMap)."""
-        event = dict()
         xmldoc = minidom.parse(xml_file)
         tag_earthquake = xmldoc.getElementsByTagName('earthquake')[0]
-        event['year'] = int(tag_earthquake.attributes['year'].value)
-        event['month'] = int(tag_earthquake.attributes['month'].value)
-        event['day'] = int(tag_earthquake.attributes['day'].value)
-        event['hour'] = int(tag_earthquake.attributes['hour'].value)
-        event['minute'] = int(tag_earthquake.attributes['minute'].value)
-        event['second'] = int(tag_earthquake.attributes['second'].value)
+        event = {
+            'year': int(tag_earthquake.attributes['year'].value),
+            'month': int(tag_earthquake.attributes['month'].value),
+            'day': int(tag_earthquake.attributes['day'].value),
+            'hour': int(tag_earthquake.attributes['hour'].value),
+            'minute': int(tag_earthquake.attributes['minute'].value),
+            'second': int(tag_earthquake.attributes['second'].value),
+        }
         event['time'] = datetime(
             event['year'], event['month'], event['day'],
             event['hour'], event['minute'], event['second'])
@@ -147,10 +148,10 @@ class PgaMap(object):
             lon, lat, pga, pgv, psa03, psa10, psa30
         """
         soil_conditions = {}
-        soil_cnd_codes = {'soil': 'S', 'rock': 'R', 'NA': 'U'}
         if soil_conditions_file is not None:
             self.conf['soil_conditions'] = True
-            for line in open(soil_conditions_file, 'r'):
+            soil_cnd_codes = {'soil': 'S', 'rock': 'R', 'NA': 'U'}
+            for line in open(soil_conditions_file, 'r', encoding='utf8'):
                 line = line.strip()
                 if not line:
                     continue
@@ -160,7 +161,7 @@ class PgaMap(object):
                 soil_conditions[station] = soil_cnd_codes[soil_cnd]
         xmldoc = minidom.parse(xml_file)
         tag_stationlist = xmldoc.getElementsByTagName('stationlist')
-        attributes = dict()
+        attributes = {}
         for slist in tag_stationlist:
             tag_station = slist.getElementsByTagName('station')
             for sta in tag_station:
@@ -170,17 +171,14 @@ class PgaMap(object):
                 stlo = float(sta.attributes['lon'].value)
                 tag_comp = sta.getElementsByTagName('comp')
                 for comp in tag_comp:
-                    cmp_attributes = {'latitude': stla, 'longitude': stlo}
                     cmp_name = comp.attributes['name'].value
                     cmp_id = '.'.join((net, stname, cmp_name))
                     # pga is in percent-g, transform it to milli-g
                     tag_acc = comp.getElementsByTagName('acc')[0]
                     pga = tag_acc.attributes['value'].value
-                    cmp_attributes['pga'] = float(pga)*10.
                     # pgv is cm/s, transform it to m/s
                     tag_vel = comp.getElementsByTagName('vel')[0]
                     pgv = tag_vel.attributes['value'].value
-                    cmp_attributes['pgv'] = float(pgv)/100.
                     # psa is in percent-g, transform it to milli-g
                     tag_psa03 = comp.getElementsByTagName('psa03')[0]
                     tag_psa10 = comp.getElementsByTagName('psa10')[0]
@@ -188,74 +186,80 @@ class PgaMap(object):
                     psa03 = tag_psa03.attributes['value'].value
                     psa10 = tag_psa10.attributes['value'].value
                     psa30 = tag_psa30.attributes['value'].value
-                    cmp_attributes['psa03'] = float(psa03)*10.
-                    cmp_attributes['psa10'] = float(psa10)*10.
-                    cmp_attributes['psa30'] = float(psa30)*10.
                     try:
                         soil_cnd = soil_conditions[stname]
                     except KeyError:
                         soil_cnd = 'U'
-                    cmp_attributes['soil_cnd'] = soil_cnd
+                    cmp_attributes = {
+                        'latitude': stla,
+                        'longitude': stlo,
+                        'pga': float(pga) * 10.0,
+                        'pgv': float(pgv) / 100.0,
+                        'psa03': float(psa03) * 10.0,
+                        'psa10': float(psa10) * 10.0,
+                        'psa30': float(psa30) * 10.0,
+                        'soil_cnd': soil_cnd,
+                    }
                     attributes[cmp_id] = cmp_attributes
         self.attributes = attributes
 
     def make_path(self, out_dir):
         """Create the output path."""
         event = self.event
-        year = '{:04d}'.format(event['year'])
-        month = '{:02d}'.format(event['month'])
-        day = '{:02d}'.format(event['day'])
+        year = f"{event['year']:04d}"
+        month = f"{event['month']:02d}"
+        day = f"{event['day']:02d}"
         self.out_path = os.path.join(
             out_dir, year, month, day, event['id_sc3'])
-        try:
+        with contextlib.suppress(FileExistsError):
             os.makedirs(self.out_path)
-        except FileExistsError:
-            pass
-        self.fileprefix = '{}_{}'.format(event['timestr'], event['id_sc3'])
+        self.fileprefix = f"{event['timestr']}_{event['id_sc3']}"
         self.basename = os.path.join(self.out_path, self.fileprefix)
 
     def _colormap(self):
         if self.colorbar_bcsf:
-            colors = [
-                '#CCCCCC',
-                '#70FFFF',
-                '#00FF00',
-                '#FCFF00',
-                '#FFA800',
-                '#FF0000',
-                '#C60000',
-                '#850000',
-                '#A7009B',
-                '#18009D'
-            ]
-            cmap = mpl.colors.LinearSegmentedColormap.from_list(
-                'pga_cmap', colors, len(colors))
-            # BCSF bounds (in %g)
-            bounds = np.array(
-                [0.02, 0.07, 0.3, 1.1, 4.7, 8.6, 16, 29, 52, 96, 100])
-            # convert bounds to mg
-            bounds *= 10.
-            norm = mpl.colors.BoundaryNorm(
-                boundaries=bounds, ncolors=len(colors))
-            return norm, cmap, bounds[:-1]
-        else:
-            vmin = float(self.conf['COLORBAR_PGA_MIN_MAX'].split(',')[0])
-            vmax = float(self.conf['COLORBAR_PGA_MIN_MAX'].split(',')[1])
-            # Normalizing color scale
-            norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
-            colors = [
-                '#FFE39A',
-                '#FFBE6A',
-                '#FF875F',
-                '#F3484E',
-                '#E6004F',
-                '#BD0064',
-                '#7B0061'
-            ]
-            ncols = int(vmax-vmin)
-            cmap = mpl.colors.LinearSegmentedColormap.from_list(
-                'pga_cmap', colors, ncols)
-            return norm, cmap, None
+            return self._colormap_bcsf()
+        vmin = float(self.conf['COLORBAR_PGA_MIN_MAX'].split(',')[0])
+        vmax = float(self.conf['COLORBAR_PGA_MIN_MAX'].split(',')[1])
+        # Normalizing color scale
+        norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+        colors = [
+            '#FFE39A',
+            '#FFBE6A',
+            '#FF875F',
+            '#F3484E',
+            '#E6004F',
+            '#BD0064',
+            '#7B0061'
+        ]
+        ncols = int(vmax-vmin)
+        cmap = mpl.colors.LinearSegmentedColormap.from_list(
+            'pga_cmap', colors, ncols)
+        return norm, cmap, None
+
+    def _colormap_bcsf(self):
+        colors = [
+            '#CCCCCC',
+            '#70FFFF',
+            '#00FF00',
+            '#FCFF00',
+            '#FFA800',
+            '#FF0000',
+            '#C60000',
+            '#850000',
+            '#A7009B',
+            '#18009D'
+        ]
+        cmap = mpl.colors.LinearSegmentedColormap.from_list(
+            'pga_cmap', colors, len(colors))
+        # BCSF bounds (in %g)
+        bounds = np.array(
+            [0.02, 0.07, 0.3, 1.1, 4.7, 8.6, 16, 29, 52, 96, 100])
+        # convert bounds to mg
+        bounds *= 10.
+        norm = mpl.colors.BoundaryNorm(
+            boundaries=bounds, ncolors=len(colors))
+        return norm, cmap, bounds[:-1]
 
     def _select_stations_pga(self):
         attributes = self.attributes
@@ -267,12 +271,10 @@ class PgaMap(object):
         cmp_ids = [cmp_id for cmp_id in attributes
                    if lon0 <= attributes[cmp_id]['longitude'] <= lon1
                    and lat0 <= attributes[cmp_id]['latitude'] <= lat1]
-        if len(cmp_ids) == 0:
-            raise Exception(
+        if not cmp_ids:
+            raise ValueError(
                 'No stations in the selected area. No plot generated.')
-        # sort cmp_ids by station name
-        cmp_ids = sorted(cmp_ids, key=lambda x: x.split('.')[1])
-        return cmp_ids
+        return sorted(cmp_ids, key=lambda x: x.split('.')[1])
 
     def _plot_circles(self, ax):
         geodetic_transform = ccrs.PlateCarree()
@@ -299,7 +301,7 @@ class PgaMap(object):
             dist = (hypo_dist**2 - evdepth**2)**0.5
             azimuths = np.arange(0, 360, 1)
             circle = np.array(
-                [g.fwd(evlon, evlat, az, dist*1e3)[0:2] for az in azimuths]
+                [g.fwd(evlon, evlat, az, dist*1e3)[:2] for az in azimuths]
             )
             dlon = (self.lon1-self.lon0)*0.01
             dlat = (self.lat1-self.lat0)*0.01
@@ -322,7 +324,7 @@ class PgaMap(object):
             ax.plot(circle[:, 0], circle[:, 1],
                     color='#777777', linestyle='--',
                     transform=geodetic_transform)
-            dist_text = '{:d} km'.format(hypo_dist)
+            dist_text = f'{hypo_dist:d} km'
             t = plt.text(p0[0], p0[1], dist_text, size=6, weight='bold',
                          verticalalignment='center',
                          horizontalalignment='right',
@@ -364,7 +366,7 @@ class PgaMap(object):
         cmp_ids = self._select_stations_pga()
         texts = []
         markers = []
-        for n, cmp_id in enumerate(cmp_ids):
+        for cmp_id in cmp_ids:
             cmp_attrib = self.attributes[cmp_id]
             lon = cmp_attrib['longitude']
             lat = cmp_attrib['latitude']
@@ -390,34 +392,12 @@ class PgaMap(object):
             texts.append(t)
 
         if self.conf['soil_conditions']:
-            kwargs = {
-                'markersize': 8,
-                'markeredgewidth': 1,
-                'markeredgecolor': 'k',
-                'color': '#cccccc',
-                'linewidth': 0,
-                'transform': geodetic_transform
-            }
-            rock_station, = ax.plot(
-                -self.lon0, -self.lat0, marker=self.markers['R'],
-                label='rock', **kwargs)
-            soil_station, = ax.plot(
-                -self.lon0, -self.lat0, marker=self.markers['S'],
-                label='soil', **kwargs)
-            handles = [rock_station, soil_station]
-            if unknown_soils:
-                unk_station, = ax.plot(
-                    -self.lon0, -self.lat0, marker=self.markers['U'],
-                    label='unknown', **kwargs)
-                handles.append(unk_station)
-            legend = ax.legend(handles=handles, loc=self.legend_loc)
-            legend.set_zorder(99)
-
+            self._plot_soil_conditions(geodetic_transform, ax, unknown_soils)
         # Add a colorbar
         ax_divider = make_axes_locatable(ax)
-        cax = ax_divider.append_axes('right', size='100%',
-                                     pad='-30%', aspect=15.,
-                                     map_projection=stamen_terrain.crs)
+        cax = ax_divider.append_axes(
+            'right', size='100%', pad='-30%', aspect=15.,
+            map_projection=stamen_terrain.crs)
         cax.background_patch.set_visible(False)
         cax.outline_patch.set_visible(False)
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
@@ -431,22 +411,46 @@ class PgaMap(object):
 
         adjust_text(texts, add_objects=markers)
 
-        outfile = self.basename + '_pga_map_fig.png'
+        outfile = f'{self.basename}_pga_map_fig.png'
         fig.savefig(outfile, dpi=300, bbox_inches='tight')
 
-    def _b3(self, M, R, uncertainty=False):
+    def _plot_soil_conditions(self, geodetic_transform, ax, unknown_soils):
+        kwargs = {
+            'markersize': 8,
+            'markeredgewidth': 1,
+            'markeredgecolor': 'k',
+            'color': '#cccccc',
+            'linewidth': 0,
+            'transform': geodetic_transform
+        }
+        rock_station, = ax.plot(
+            -self.lon0, -self.lat0, marker=self.markers['R'],
+            label='rock', **kwargs)
+        soil_station, = ax.plot(
+            -self.lon0, -self.lat0, marker=self.markers['S'],
+            label='soil', **kwargs)
+        handles = [rock_station, soil_station]
+        if unknown_soils:
+            unk_station, = ax.plot(
+                -self.lon0, -self.lat0, marker=self.markers['U'],
+                label='unknown', **kwargs)
+            handles.append(unk_station)
+        legend = ax.legend(handles=handles, loc=self.legend_loc)
+        legend.set_zorder(99)
+
+    def _b3(self, mag, epi_dist, uncertainty=False):
         """Compute the B3 law (Beauducel et al., 2011)."""
         a = 0.61755
         b = -0.0030746
         c = -3.3968
-        logPGA_uncertainty = 0.47
-        PGA = 10.**(a*M + b*R - np.log10(R) + c)
+        pga_exponent = a*mag + b*epi_dist - np.log10(epi_dist) + c
+        pga = 10**pga_exponent
         if uncertainty:
-            PGA_lower = 10.**(a*M + b*R - np.log10(R) + c - logPGA_uncertainty)
-            PGA_upper = 10.**(a*M + b*R - np.log10(R) + c + logPGA_uncertainty)
-            return PGA, PGA_lower, PGA_upper
-        else:
-            return PGA
+            log_pga_uncertainty = 0.47
+            pga_lower = 10**(pga_exponent - log_pga_uncertainty)
+            pga_upper = 10**(pga_exponent + log_pga_uncertainty)
+            return pga, pga_lower, pga_upper
+        return pga
 
     def plot_pga_dist(self):
         """Plot PGA as a function of distance."""
@@ -458,14 +462,14 @@ class PgaMap(object):
         ax.set_xlabel('Hypocentral distance (km)')
         ax.set_ylabel('PGA (mg)')
         # plot the b3 law (Beauducel et al., 2011)
-        M = event['mag']
-        R = np.logspace(-1, 3, 50)
-        PGA, PGA_lower, PGA_upper = self._b3(M, R, uncertainty=True)
-        b3_curve, = ax.plot(R, PGA*1e3, label=r'$B^3$: M {:.1f}'.format(M))
+        mag = event['mag']
+        epi_dist = np.logspace(-1, 3, 50)
+        pga, pga_lower, pga_upper = self._b3(mag, epi_dist, uncertainty=True)
+        b3_curve, = ax.plot(epi_dist, pga*1e3, label=f'$B^3$: M {mag:.1f}')
         kwargs = {
             'color': '#999999', 'linestyle': '--', 'label': 'uncertainty'}
-        b3_uncertainty, = ax.plot(R, PGA_lower*1e3, **kwargs)
-        b3_uncertainty, = ax.plot(R, PGA_upper*1e3, **kwargs)
+        b3_uncertainty, = ax.plot(epi_dist, pga_lower*1e3, **kwargs)
+        b3_uncertainty, = ax.plot(epi_dist, pga_upper*1e3, **kwargs)
         legend_handles = [b3_curve, b3_uncertainty]
 
         g = Geod(ellps='WGS84')
@@ -516,7 +520,7 @@ class PgaMap(object):
         else:
             ax.set_xlim(10, 500)
             ax.set_ylim(1e-2, 1e4)
-        outfile = self.basename + '_pga_dist_fig.png'
+        outfile = f'{self.basename}_pga_dist_fig.png'
         fig.savefig(outfile, dpi=300, bbox_inches='tight')
 
     def _build_pga_table_html(self, html):
@@ -525,7 +529,7 @@ class PgaMap(object):
         # find max pga and corresponding station
         pga_list = [(cmp_id.split('.')[1], self.attributes[cmp_id]['pga'])
                     for cmp_id in cmp_ids]
-        pga_max_sta, pga_max = max(pga_list, key=lambda x: x[1])
+        pga_max_sta, _pga_max = max(pga_list, key=lambda x: x[1])
         if self.conf['soil_conditions']:
             _soil_cnds = [
                 self.attributes[cmp_id]['soil_cnd'] for cmp_id in cmp_ids]
@@ -543,35 +547,34 @@ class PgaMap(object):
         for nr in range(nrows):
             rows += '\n<tr>'
             for nc in range(ncols):
-                placeholder = '%STA{:02d}'.format(nr + nc*nrows)
-                rows += \
-                    '\n  <td class="left">{}</td>'.format(placeholder)
-                placeholder = '%PGA{:02d}'.format(nr + nc*nrows)
-                rows += \
-                    '\n  <td class="right">{}</td>'.format(placeholder)
+                val_number = nr + nc*nrows
+                placeholder = f'%STA{val_number:02d}'
+                rows += f'\n  <td class="left">{placeholder}</td>'
+                placeholder = f'%PGA{val_number:02d}'
+                rows += f'\n  <td class="right">{placeholder}</td>'
             rows += '\n</tr>'
         cmp_ids = sorted(cmp_ids, key=lambda x: x.split('.')[1])
         for n, cmp_id in enumerate(cmp_ids):
             cmp_attrib = self.attributes[cmp_id]
             pga = cmp_attrib['pga']
-            pga_text = '{:5.1f}'.format(pga).replace(' ', '&nbsp;')
+            pga_text = f'{pga:5.1f}'.replace(' ', '&nbsp;')
             stname = cmp_id.split('.')[1]
             if self.conf['soil_conditions']:
                 soil_cnd = cmp_attrib['soil_cnd']
-                st_text = '{}({}):'.format(stname, soil_cnd)
+                st_text = f'{stname}({soil_cnd}):'
             else:
-                st_text = '{}:'.format(stname)
+                st_text = f'{stname}:'
             if stname == pga_max_sta:
-                st_text = '<b>*' + st_text + '</b>'
-                pga_text = '<b>' + pga_text + '</b>'
+                st_text = f'<b>*{st_text}</b>'
+                pga_text = f'<b>{pga_text}</b>'
             rows = rows\
-                .replace('%STA{:02d}'.format(n), st_text)\
-                .replace('%PGA{:02d}'.format(n), pga_text)
+                .replace(f'%STA{n:02d}', st_text)\
+                .replace(f'%PGA{n:02d}', pga_text)
         # remove extra rows
-        for nn in range(n+1, nrows*ncols):
+        for nn in range(len(cmp_ids), nrows*ncols):
             rows = rows\
-                .replace('%STA{:02d}'.format(nn), '')\
-                .replace('%PGA{:02d}'.format(nn), '')
+                .replace(f'%STA{nn:02d}', '')\
+                .replace(f'%PGA{nn:02d}', '')
         html = html.replace('%ROWS', rows)
         return html
 
@@ -579,19 +582,19 @@ class PgaMap(object):
         """Write the output HTML file."""
         event = self.event
         template_html = os.path.join(script_path, 'template.html')
-        html = open(template_html, 'r').read()
-        title = 'Peak Ground Acceleration &ndash; ' + self.conf['REGION']
+        html = open(template_html, 'r', encoding='utf8').read()
+        title = f"Peak Ground Acceleration &ndash; {self.conf['REGION']}"
         evid = event['id_sc3']
-        subtitle = evid + ' &ndash; '
+        subtitle = f'{evid} &ndash; '
         date = event['time'].strftime('%Y-%m-%d %H:%M:%S')
-        subtitle += date + ' &ndash; '
-        subtitle += 'M {:.1f}'.format(event['mag'])
+        subtitle += f'{date} &ndash; '
+        subtitle += f"M {event['mag']:.1f}"
 
         # Event info table
-        lat = '{:8.4f}'.format(event['lat']).replace(' ', '&nbsp;')
-        lon = '{:8.4f}'.format(event['lon']).replace(' ', '&nbsp;')
-        depth = '{:.3f} km'.format(event['depth']).replace(' ', '&nbsp;')
-        mag = '{:.2f}'.format(event['mag']).replace(' ', '&nbsp;')
+        lat = f"{event['lat']:8.4f}".replace(' ', '&nbsp;')
+        lon = f"{event['lon']:8.4f}".replace(' ', '&nbsp;')
+        depth = f"{event['depth']:.3f} km".replace(' ', '&nbsp;')
+        mag = f"{event['mag']:.2f}".replace(' ', '&nbsp;')
         html = html\
             .replace('%TITLE', title)\
             .replace('%SUBTITLE', subtitle)\
@@ -606,11 +609,11 @@ class PgaMap(object):
         html = self._build_pga_table_html(html)
 
         # Map file
-        map_fig_file = self.basename + '_pga_map_fig.png'
+        map_fig_file = f'{self.basename}_pga_map_fig.png'
         map_fig_file = os.path.basename(map_fig_file)
         html = html.replace('%MAP', map_fig_file)
         # PGA-dist file
-        pga_dist_fig_file = self.basename + '_pga_dist_fig.png'
+        pga_dist_fig_file = f'{self.basename}_pga_dist_fig.png'
         pga_dist_fig_file = os.path.basename(pga_dist_fig_file)
         html = html.replace('%PGA_DIST', pga_dist_fig_file)
         # Footer
@@ -624,11 +627,11 @@ class PgaMap(object):
         html = html.replace('%FOOTER_TEXT', footer_text)
 
         # Write HTML file
-        html_file = self.basename + '_pga_map.html'
-        with open(html_file, 'w') as fp:
+        html_file = f'{self.basename}_pga_map.html'
+        with open(html_file, 'w', encoding='utf8') as fp:
             fp.write(html)
         if self.debug:
-            print('\nHTML report saved to {}'.format(html_file))
+            print(f'\nHTML report saved to {html_file}')
 
         # Link CSS file and logos
         styles_orig = os.path.join(script_path, 'styles.css')
@@ -649,8 +652,8 @@ class PgaMap(object):
 
     def write_pdf(self):
         """Convert HTML file to PDF."""
-        html_file = self.basename + '_pga_map.html'
-        pdf_file = self.basename + '_pga_map.pdf'
+        html_file = f'{self.basename}_pga_map.html'
+        pdf_file = f'{self.basename}_pga_map.pdf'
         pdfkit_options = {
             'dpi': 300,
             'margin-bottom': '0cm',
@@ -658,34 +661,34 @@ class PgaMap(object):
             'enable-local-file-access': None
         }
         pdfkit.from_file(html_file, pdf_file, options=pdfkit_options)
-        print('\nPDF report saved to {}'.format(pdf_file))
+        print(f'\nPDF report saved to {pdf_file}')
 
     def write_images(self, thumb_height):
         """Convert PDF file to full size PNG and generate a JPEG thumbnail."""
-        pdf_file = self.basename + '_pga_map.pdf'
-        png_file = self.basename + '_pga_map.png'
-        thumb_file = self.basename + '_pga_map.jpg'
+        pdf_file = f'{self.basename}_pga_map.pdf'
+        png_file = f'{self.basename}_pga_map.png'
+        thumb_file = f'{self.basename}_pga_map.jpg'
         page = convert_from_path(pdf_file, dpi=300)[0]
         page.save(png_file, 'PNG')
-        print('\nPNG report saved to {}'.format(png_file))
+        print(f'\nPNG report saved to {png_file}')
         size = page.size
         ratio = thumb_height/size[1]
         thumb_width = int(size[0]*ratio)
         page_thumb = page.resize((thumb_width, thumb_height))
         page_thumb.save(thumb_file, 'JPEG')
-        print('\nThumbnail saved to {}'.format(thumb_file))
+        print(f'\nThumbnail saved to {thumb_file}')
 
     def write_attributes(self):
         """Write attributes text file."""
         event = self.event
         attributes = self.attributes
-        outfile = self.basename + '_pga_map.txt'
-        fp = open(outfile, 'w')
+        outfile = f'{self.basename}_pga_map.txt'
+        fp = open(outfile, 'w', encoding='utf8')
         fp.write(
-            '#{} {} lon {:8.4f} lat {:8.4f} depth {:8.3f} mag {:.2f}\n'.format(
-                event['id_sc3'], event['timestr'],
-                event['lon'], event['lat'], event['depth'], event['mag'])
-            )
+            f"#{event['id_sc3']} {event['timestr']} "
+            f"lon {event['lon']:8.4f} lat {event['lat']:8.4f} "
+            f"depth {event['depth']:8.3f} mag {event['mag']:.2f}\n"
+        )
         fp.write('#id                pga      pgv    psa03   psa10   psa30\n')
         fp.write('#                 (mg)     (m/s)    (mg)    (mg)    (mg)\n')
         fp.write('#\n')
@@ -696,11 +699,13 @@ class PgaMap(object):
             psa03 = cmp_attrib['psa03']
             psa10 = cmp_attrib['psa10']
             psa30 = cmp_attrib['psa30']
-            fp.write('{:14s} {:7.3f} {:.3e} {:7.3f} {:7.3f} {:7.3f}\n'.format(
-                        cmp_id, pga, pgv, psa03, psa10, psa30))
-        print('\nText file saved to {}'.format(outfile))
+            fp.write(
+                f'{cmp_id:14s} {pga:7.3f} {pgv:.3e} '
+                f'{psa03:7.3f} {psa10:7.3f} {psa30:7.3f}\n'
+            )
+        print(f'\nText file saved to {outfile}')
 
-    def make_symlinks(self):
+    def make_symlinks(self):  # sourcery skip: use-fstring-for-concatenation
         """Create symbolic links."""
         cwd = os.getcwd()
         os.chdir(self.out_path)
@@ -717,11 +722,11 @@ class PgaMap(object):
         """Remove intermediate files, except in DEBUG mode."""
         if self.debug:
             return
-        html_file = self.basename + '_pga_map.html'
+        html_file = f'{self.basename}_pga_map.html'
         os.remove(html_file)
-        map_fig_file = self.basename + '_pga_map_fig.png'
+        map_fig_file = f'{self.basename}_pga_map_fig.png'
         os.remove(map_fig_file)
-        pga_dist_fig_file = self.basename + '_pga_dist_fig.png'
+        pga_dist_fig_file = f'{self.basename}_pga_dist_fig.png'
         os.remove(pga_dist_fig_file)
         styles_link = os.path.join(self.out_path, 'styles.css')
         if os.access(styles_link,  os.F_OK):
@@ -751,8 +756,7 @@ def parse_args():
     parser.add_argument('-w', '--wo_root_code', type=str,
                         default='/opt/webobs/CODE',
                         help='WebObs ROOT_CODE (default: /opt/webobs/CODE)')
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def main():
