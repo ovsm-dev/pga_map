@@ -83,7 +83,7 @@ class PgaMap(object):
             open(config_file, 'r', encoding='utf8').read()\
             .replace('=', '#').replace('|', '=')
         # Prepend a [root] namespace for ConfigParser compatibility
-        conf_str = '[root]\n' + conf_str
+        conf_str = f'[root]\n{conf_str}'
         conf_fp = StringIO(conf_str)
         cfg = ConfigParser()
         # Keep variable names in capital letters
@@ -682,17 +682,17 @@ class PgaMap(object):
         # Link CSS file and logos
         styles_orig = os.path.join(script_path, 'styles.css')
         styles_link = os.path.join(self.out_path, 'styles.css')
-        if os.access(styles_link,  os.F_OK):
+        with contextlib.suppress(FileNotFoundError):
             os.remove(styles_link)
         os.symlink(styles_orig, styles_link)
         if self.logo_file:
             logo_link = os.path.join(self.out_path, 'logo_file.png')
-            if os.access(logo_link,  os.F_OK):
+            with contextlib.suppress(FileNotFoundError):
                 os.remove(logo_link)
             os.symlink(self.logo_file, logo_link)
         if self.logo2_file:
             logo_link = os.path.join(self.out_path, 'logo2_file.png')
-            if os.access(logo_link,  os.F_OK):
+            with contextlib.suppress(FileNotFoundError):
                 os.remove(logo_link)
             os.symlink(self.logo2_file, logo_link)
 
@@ -756,12 +756,12 @@ class PgaMap(object):
         cwd = os.getcwd()
         os.chdir(self.out_path)
         for ext in ['txt', 'jpg', 'png', 'pdf']:
-            filename = self.fileprefix + '_pga_map.' + ext
-            if not os.access(filename,  os.F_OK):
+            filename = f'{self.fileprefix}_pga_map.{ext}'
+            if not os.access(filename, os.F_OK):
                 continue
-            if os.access('pga_map.' + ext,  os.F_OK):
-                os.remove('pga_map.' + ext)
-            os.symlink(filename, 'pga_map.' + ext)
+            with contextlib.suppress(FileNotFoundError):
+                os.remove(f'pga_map.{ext}')
+            os.symlink(filename, f'pga_map.{ext}')
         os.chdir(cwd)
 
     def clean_intermediate_files(self):
@@ -775,12 +775,12 @@ class PgaMap(object):
         pga_dist_fig_file = f'{self.basename}_pga_dist_fig.png'
         os.remove(pga_dist_fig_file)
         styles_link = os.path.join(self.out_path, 'styles.css')
-        if os.access(styles_link,  os.F_OK):
+        with contextlib.suppress(FileNotFoundError):
             os.remove(styles_link)
         logos = os.path.join(script_path, 'logos', '*.png')
         for logo in glob(logos):
             logo_link = os.path.join(self.out_path, os.path.basename(logo))
-            if os.access(logo_link,  os.F_OK):
+            with contextlib.suppress(FileNotFoundError):
                 os.remove(logo_link)
 
 
