@@ -2,7 +2,7 @@
 
 Parses event XML files (ShakeMap) and plots PGAs in mg on a map.
 
-(c) 2017-2022 - Claudio Satriano (IPGP), Félix Léger (IPGP/OVSM), Jean-Marie Saurel (IPGP)
+(c) 2017-2023 - Claudio Satriano (IPGP), Félix Léger (IPGP/OVSM), Jean-Marie Saurel (IPGP)
 
 ## Installation
 
